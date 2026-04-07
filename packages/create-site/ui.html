@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agency Web Stack - Project Creator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #0a0a0a; color: #e0e0e0; line-height: 1.6; padding: 0;
+  }
+  .container { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
+  .subtitle { color: #888; font-size: 0.95rem; margin-bottom: 40px; }
+  .section { margin-bottom: 32px; }
+  .section-title { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 12px; }
+  label { display: block; color: #ccc; font-size: 0.9rem; margin-bottom: 6px; }
+  input[type="text"] {
+    width: 100%; padding: 10px 14px; background: #161616; border: 1px solid #2a2a2a;
+    border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: #3b82f6; }
+  .slug-preview { font-size: 0.8rem; color: #666; margin-top: 4px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 500; border: 1px solid #2a2a2a; background: #161616;
+    color: #ccc; cursor: pointer; transition: all 0.15s;
+  }
+  .btn:hover { background: #222; border-color: #444; color: #fff; }
+  .btn.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+  .btn-primary {
+    background: #3b82f6; border-color: #3b82f6; color: #fff; font-size: 1rem; padding: 12px 28px;
+  }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger { border-color: #7f1d1d; color: #fca5a5; }
+  .btn-danger:hover { background: #450a0a; border-color: #991b1b; }
+  .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+  .quick-locations { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .folder-browser { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; }
+  .folder-path {
+    display: flex; align-items: center; gap: 6px; padding: 10px 14px;
+    background: #161616; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; color: #999;
+    overflow-x: auto; white-space: nowrap;
+  }
+  .folder-path span { cursor: pointer; color: #93c5fd; }
+  .folder-path span:hover { text-decoration: underline; }
+  .folder-list { max-height: 240px; overflow-y: auto; }
+  .folder-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+    cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #1a1a1a; transition: background 0.1s;
+  }
+  .folder-item:hover { background: #1a1a1a; }
+  .folder-icon { color: #f59e0b; font-size: 1rem; }
+  .folder-select-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: #161616; border-top: 1px solid #2a2a2a;
+  }
+  .selected-path { font-size: 0.85rem; color: #93c5fd; }
+  .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .preset-card {
+    padding: 12px; background: #161616; border: 1px solid #2a2a2a; border-radius: 8px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .preset-card:hover { border-color: #444; }
+  .preset-card.active { border-color: #3b82f6; background: #1e3a5f; }
+  .preset-card .name { font-weight: 600; font-size: 0.9rem; color: #fff; }
+  .preset-card .desc { font-size: 0.75rem; color: #888; margin-top: 2px; }
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .service-check {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    background: #161616; border: 1px solid #2a2a2a; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .service-check:hover { border-color: #444; }
+  .service-check.active { border-color: #3b82f6; background: #1e3a5f; }
+  .service-check input { display: none; }
+  .service-check .label { font-size: 0.85rem; }
+  .terminal {
+    background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.8rem;
+    max-height: 320px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    color: #aaa; display: none; margin-top: 16px; line-height: 1.5;
+  }
+  .terminal.visible { display: block; }
+  .server-panel {
+    display: none; margin-top: 32px; padding: 20px; background: #111;
+    border: 1px solid #2a2a2a; border-radius: 8px;
+  }
+  .server-panel.visible { display: block; }
+  .server-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .server-row:last-child { border-bottom: none; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #444; flex-shrink: 0; }
+  .status-dot.starting { background: #eab308; }
+  .status-dot.running { background: #22c55e; }
+  .server-name { font-weight: 600; font-size: 0.9rem; min-width: 80px; }
+  .server-url a { color: #93c5fd; text-decoration: none; font-size: 0.85rem; }
+  .server-url a:hover { text-decoration: underline; }
+  .server-actions { margin-left: auto; display: flex; gap: 8px; }
+  .server-logs {
+    margin-top: 12px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem;
+    background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 6px;
+    padding: 10px; max-height: 180px; overflow-y: auto; color: #888;
+    white-space: pre-wrap; word-break: break-all; display: none;
+  }
+  .server-logs.visible { display: block; }
+  .url-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .url-table th { text-align: left; font-size: 0.75rem; color: #666; padding: 6px 10px; border-bottom: 1px solid #2a2a2a; }
+  .url-table td { padding: 8px 10px; font-size: 0.85rem; border-bottom: 1px solid #1a1a1a; }
+  .url-table a { color: #93c5fd; text-decoration: none; }
+  .url-table a:hover { text-decoration: underline; }
+  .success-banner {
+    display: none; padding: 16px; background: #052e16; border: 1px solid #166534;
+    border-radius: 8px; margin-top: 16px; color: #86efac; font-size: 0.9rem;
+  }
+  .success-banner.visible { display: block; }
+  .error-banner {
+    display: none; padding: 16px; background: #450a0a; border: 1px solid #991b1b;
+    border-radius: 8px; margin-top: 16px; color: #fca5a5; font-size: 0.9rem;
+  }
+  .error-banner.visible { display: block; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Agency Web Stack</h1>
+  <p class="subtitle">Create a new project with your preferred stack and services.</p>
+
+  <div class="section">
+    <div class="section-title">1. Choose Location</div>
+    <div class="quick-locations" id="quickLocations"></div>
+    <div class="folder-browser">
+      <div class="folder-path" id="folderPath"></div>
+      <div class="folder-list" id="folderList"></div>
+      <div class="folder-select-bar">
+        <span class="selected-path" id="selectedDisplay">No folder selected</span>
+        <button class="btn btn-sm" id="selectFolderBtn" onclick="selectCurrentFolder()">Select This Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">2. Project Name</div>
+    <input type="text" id="projectNameInput" placeholder="my-awesome-site" oninput="updateSlug()">
+    <div class="slug-preview" id="slugPreview"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3. Stack &amp; Services</div>
+    <label>Presets</label>
+    <div class="preset-grid" id="presetGrid"></div>
+    <label>Or pick individual services</label>
+    <div class="services-grid" id="servicesGrid"></div>
+  </div>
+
+  <div class="section">
+    <button class="btn btn-primary" id="createBtn" onclick="createProject()" disabled>Create Project</button>
+    <div class="error-banner" id="errorBanner"></div>
+    <div class="success-banner" id="successBanner"></div>
+    <div class="terminal" id="terminal"></div>
+  </div>
+
+  <div class="server-panel" id="serverPanel">
+    <div class="section-title">Dev Servers</div>
+    <div id="serverRows"></div>
+    <div class="server-logs" id="serverLogs"></div>
+  </div>
+
+  <div class="server-panel" id="urlPanel">
+    <div class="section-title">Service URLs</div>
+    <table class="url-table">
+      <thead><tr><th>Service</th><th>URL</th><th>Status</th></tr></thead>
+      <tbody id="urlTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function() {
+  // -- State --
+  var currentPath = '';
+  var selectedPath = '';
+  var projectName = '';
+  var selectedPreset = null;
+  var selectedServices = new Set();
+  var projectPath = '';
+  var creating = false;
+  var serverStates = {};
+
+  var presets = [
+    { id: 'marketing', name: 'Marketing Site', desc: 'Astro + Supabase + Resend' },
+    { id: 'saas', name: 'SaaS App', desc: 'Next.js + Supabase + Stripe + Resend' },
+    { id: 'blog', name: 'Blog / Content', desc: 'Astro + Supabase' },
+    { id: 'fullstack', name: 'Full Stack', desc: 'Astro + Next.js + all services' },
+  ];
+
+  var services = [
+    { id: 'astro', name: 'Astro' },
+    { id: 'next', name: 'Next.js' },
+    { id: 'supabase', name: 'Supabase' },
+    { id: 'stripe', name: 'Stripe' },
+    { id: 'resend', name: 'Resend' },
+    { id: 'analytics', name: 'Analytics' },
+    { id: 'cms', name: 'CMS' },
+  ];
+
+  var defaultServiceURLs = [
+    { name: 'Astro', port: 4321, server: 'astro' },
+    { name: 'Next.js', port: 3000, server: 'next' },
+    { name: 'Supabase Studio', port: 54323, server: null },
+    { name: 'Supabase API', port: 54321, server: null },
+  ];
+
+  // -- Helpers --
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function escAttr(s) { return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+  function $(id) { return document.getElementById(id); }
+
+  // -- Init --
+  async function init() {
+    renderPresets();
+    renderServices();
+    var res = await fetch('/api/home');
+    var data = await res.json();
+    currentPath = data.home;
+    renderQuickLocations(data.locations);
+    loadFolders(currentPath);
+    connectSSE();
+  }
+
+  // -- SSE --
+  function connectSSE() {
+    var evtSource = new EventSource('/api/logs');
+    evtSource.onmessage = function(e) {
+      var msg = JSON.parse(e.data);
+      switch (msg.type) {
+        case 'log': appendTerminal(msg.data); break;
+        case 'status': appendTerminal('--- ' + msg.data + ' ---\n'); break;
+        case 'done': onProjectDone(msg.data); break;
+        case 'server-log': appendServerLog(msg.data.server, msg.data.text); break;
+        case 'server-ready': onServerReady(msg.data.server, msg.data.port); break;
+        case 'server-stopped': onServerStopped(msg.data.server); break;
+      }
+    };
+  }
+
+  // -- Folder Browser --
+  function renderQuickLocations(locations) {
+    var el = $('quickLocations');
+    var html = '';
+    for (var i = 0; i < locations.length; i++) {
+      html += '<button class="btn btn-sm" data-path="' + esc(locations[i].path) + '">' + esc(locations[i].name) + '</button>';
+    }
+    el.innerHTML = html;
+    el.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-path]');
+      if (btn) loadFolders(btn.getAttribute('data-path'));
+    });
+  }
+
+  window.loadFolders = async function(dirPath) {
+    currentPath = dirPath;
+    try {
+      var res = await fetch('/api/folders?path=' + encodeURIComponent(dirPath));
+      var data = await res.json();
+      if (data.error) return;
+      renderBreadcrumbs(data.current);
+      renderFolderList(data);
+    } catch(e) {}
+  };
+
+  function renderBreadcrumbs(p) {
+    var el = $('folderPath');
+    var parts = p.split('/').filter(Boolean);
+    var html = '<span data-nav="/">/</span>';
+    var acc = '';
+    for (var i = 0; i < parts.length; i++) {
+      acc += '/' + parts[i];
+      html += ' <span data-nav="' + esc(acc) + '">' + esc(parts[i]) + '</span> /';
+    }
+    el.innerHTML = html;
+    el.addEventListener('click', function(e) {
+      var span = e.target.closest('[data-nav]');
+      if (span) loadFolders(span.getAttribute('data-nav'));
+    });
+  }
+
+  function renderFolderList(data) {
+    var el = $('folderList');
+    var html = '';
+    if (data.current !== data.parent) {
+      html += '<div class="folder-item" data-nav="' + esc(data.parent) + '"><span class="folder-icon">&#8593;</span> <span>..</span></div>';
+    }
+    for (var i = 0; i < data.folders.length; i++) {
+      var f = data.folders[i];
+      html += '<div class="folder-item" data-nav="' + esc(f.path) + '"><span class="folder-icon">&#128193;</span> <span>' + esc(f.name) + '</span></div>';
+    }
+    if (!data.folders.length && data.current === data.parent) {
+      html = '<div style="padding:14px;color:#666;font-size:0.85rem;">No subfolders</div>';
+    }
+    el.innerHTML = html;
+    el.addEventListener('click', function(e) {
+      var item = e.target.closest('[data-nav]');
+      if (item) loadFolders(item.getAttribute('data-nav'));
+    });
+  }
+
+  window.selectCurrentFolder = function() {
+    selectedPath = currentPath;
+    $('selectedDisplay').textContent = selectedPath;
+    $('selectFolderBtn').classList.add('active');
+    validateForm();
+  };
+
+  // -- Project Name --
+  window.updateSlug = function() {
+    var raw = $('projectNameInput').value;
+    projectName = raw.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    $('slugPreview').textContent = projectName ? 'Folder: ' + projectName : '';
+    validateForm();
+  };
+
+  // -- Presets --
+  function renderPresets() {
+    var el = $('presetGrid');
+    var html = '';
+    for (var i = 0; i < presets.length; i++) {
+      var p = presets[i];
+      html += '<div class="preset-card" data-preset="' + p.id + '" id="preset-' + p.id + '">'
+        + '<div class="name">' + esc(p.name) + '</div><div class="desc">' + esc(p.desc) + '</div></div>';
+    }
+    el.innerHTML = html;
+    el.addEventListener('click', function(e) {
+      var card = e.target.closest('[data-preset]');
+      if (card) togglePreset(card.getAttribute('data-preset'));
+    });
+  }
+
+  function togglePreset(id) {
+    if (selectedPreset === id) { selectedPreset = null; }
+    else { selectedPreset = id; selectedServices.clear(); renderServices(); }
+    var cards = document.querySelectorAll('.preset-card');
+    for (var i = 0; i < cards.length; i++) cards[i].classList.remove('active');
+    if (selectedPreset) $('preset-' + id).classList.add('active');
+    validateForm();
+  }
+
+  // -- Services --
+  function renderServices() {
+    var el = $('servicesGrid');
+    var html = '';
+    for (var i = 0; i < services.length; i++) {
+      var s = services[i];
+      var active = selectedServices.has(s.id) ? ' active' : '';
+      html += '<div class="service-check' + active + '" data-service="' + s.id + '">'
+        + '<input type="checkbox"' + (selectedServices.has(s.id) ? ' checked' : '') + '>'
+        + '<span class="label">' + esc(s.name) + '</span></div>';
+    }
+    el.innerHTML = html;
+    el.addEventListener('click', function(e) {
+      var item = e.target.closest('[data-service]');
+      if (item) toggleService(item.getAttribute('data-service'));
+    });
+  }
+
+  function toggleService(id) {
+    if (selectedServices.has(id)) selectedServices.delete(id);
+    else {
+      selectedServices.add(id);
+      selectedPreset = null;
+      var cards = document.querySelectorAll('.preset-card');
+      for (var i = 0; i < cards.length; i++) cards[i].classList.remove('active');
+    }
+    renderServices();
+    validateForm();
+  }
+
+  // -- Form Validation --
+  function validateForm() {
+    var valid = selectedPath && projectName && (selectedPreset || selectedServices.size > 0);
+    $('createBtn').disabled = !valid || creating;
+  }
+
+  // -- Create Project --
+  window.createProject = async function() {
+    if (creating) return;
+    creating = true;
+    var btn = $('createBtn');
+    btn.textContent = 'Creating...';
+    btn.disabled = true;
+    $('terminal').classList.add('visible');
+    $('terminal').textContent = '';
+    $('errorBanner').classList.remove('visible');
+    $('successBanner').classList.remove('visible');
+    try {
+      var res = await fetch('/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectName: projectName,
+          location: selectedPath,
+          services: Array.from(selectedServices),
+          preset: selectedPreset,
+        }),
+      });
+      var data = await res.json();
+      if (data.error) {
+        showError(data.error);
+        creating = false;
+        btn.textContent = 'Create Project';
+        validateForm();
+      } else {
+        projectPath = data.projectPath;
+      }
+    } catch (err) {
+      showError(err.message);
+      creating = false;
+      btn.textContent = 'Create Project';
+      validateForm();
+    }
+  };
+
+  function onProjectDone(data) {
+    creating = false;
+    var btn = $('createBtn');
+    if (data.code === 0) {
+      btn.textContent = 'Done!';
+      $('successBanner').textContent = 'Project created at ' + data.projectPath;
+      $('successBanner').classList.add('visible');
+      projectPath = data.projectPath;
+      showServerPanel();
+    } else {
+      btn.textContent = 'Create Project';
+      showError('Process exited with code ' + data.code + '. Check the terminal output above.');
+      validateForm();
+    }
+  }
+
+  // -- Terminal --
+  function appendTerminal(text) {
+    var el = $('terminal');
+    el.textContent += text;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // -- Banners --
+  function showError(msg) {
+    var el = $('errorBanner');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  // -- Server Panel --
+  function showServerPanel() {
+    $('serverPanel').classList.add('visible');
+    $('urlPanel').classList.add('visible');
+    var showAstro = selectedPreset ? ['marketing', 'blog', 'fullstack'].indexOf(selectedPreset) >= 0 : selectedServices.has('astro');
+    var showNext = selectedPreset ? ['saas', 'fullstack'].indexOf(selectedPreset) >= 0 : selectedServices.has('next');
+    serverStates = {};
+    var html = '';
+    if (showAstro) {
+      serverStates.astro = { status: 'stopped', port: null };
+      html += serverRowHTML('astro', 'Astro');
+    }
+    if (showNext) {
+      serverStates.next = { status: 'stopped', port: null };
+      html += serverRowHTML('next', 'Next.js');
+    }
+    $('serverRows').innerHTML = html;
+    $('serverRows').addEventListener('click', function(e) {
+      var startBtn = e.target.closest('[data-start]');
+      if (startBtn) { startServer(startBtn.getAttribute('data-start')); return; }
+      var stopBtn = e.target.closest('[data-stop]');
+      if (stopBtn) { stopServer(stopBtn.getAttribute('data-stop')); return; }
+    });
+    renderURLTable();
+  }
+
+  function serverRowHTML(id, name) {
+    return '<div class="server-row" id="row-' + id + '">'
+      + '<div class="status-dot" id="dot-' + id + '"></div>'
+      + '<div class="server-name">' + esc(name) + '</div>'
+      + '<div class="server-url" id="url-' + id + '"></div>'
+      + '<div class="server-actions">'
+      + '<button class="btn btn-sm" id="startBtn-' + id + '" data-start="' + id + '">Start</button>'
+      + '<button class="btn btn-sm btn-danger" id="stopBtn-' + id + '" data-stop="' + id + '" style="display:none">Stop</button>'
+      + '</div></div>';
+  }
+
+  window.startServer = async function(name) {
+    serverStates[name] = { status: 'starting', port: null };
+    updateServerUI(name);
+    $('serverLogs').classList.add('visible');
+    await fetch('/api/start-server', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server: name, projectPath: projectPath }),
+    });
+  };
+
+  window.stopServer = async function(name) {
+    await fetch('/api/stop-server', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server: name }),
+    });
+  };
+
+  function onServerReady(server, port) {
+    if (!serverStates[server]) return;
+    serverStates[server] = { status: 'running', port: port };
+    updateServerUI(server);
+    renderURLTable();
+  }
+
+  function onServerStopped(server) {
+    if (!serverStates[server]) return;
+    serverStates[server] = { status: 'stopped', port: null };
+    updateServerUI(server);
+    renderURLTable();
+  }
+
+  function updateServerUI(name) {
+    var state = serverStates[name];
+    if (!state) return;
+    var dot = $('dot-' + name);
+    var urlEl = $('url-' + name);
+    var startBtn = $('startBtn-' + name);
+    var stopBtn = $('stopBtn-' + name);
+    dot.className = 'status-dot ' + state.status;
+    if (state.status === 'running' && state.port) {
+      var a = document.createElement('a');
+      a.href = 'http://localhost:' + state.port;
+      a.target = '_blank';
+      a.textContent = 'localhost:' + state.port;
+      urlEl.textContent = '';
+      urlEl.appendChild(a);
+    } else if (state.status === 'starting') {
+      urlEl.textContent = 'Starting...';
+      urlEl.style.color = '#eab308';
+    } else {
+      urlEl.textContent = '';
+      urlEl.style.color = '';
+    }
+    startBtn.style.display = state.status === 'stopped' ? '' : 'none';
+    stopBtn.style.display = state.status !== 'stopped' ? '' : 'none';
+  }
+
+  function appendServerLog(server, text) {
+    var el = $('serverLogs');
+    el.textContent += '[' + server + '] ' + text;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // -- URL Table --
+  function renderURLTable() {
+    var tbody = $('urlTableBody');
+    var html = '';
+    for (var i = 0; i < defaultServiceURLs.length; i++) {
+      var svc = defaultServiceURLs[i];
+      var state = svc.server ? serverStates[svc.server] : null;
+      var running = state && state.status === 'running';
+      var port = running ? state.port : svc.port;
+      var url = 'http://localhost:' + port;
+      var statusDot = running
+        ? '<span style="color:#22c55e">&#9679;</span>'
+        : '<span style="color:#444">&#9679;</span>';
+      var link = running
+        ? '<a href="' + esc(url) + '" target="_blank">' + esc(url) + '</a>'
+        : '<span style="color:#666">' + esc(url) + '</span>';
+      html += '<tr><td>' + esc(svc.name) + '</td><td>' + link + '</td><td>' + statusDot + '</td></tr>';
+    }
+    tbody.innerHTML = html;
+  }
+
+  // -- Boot --
+  init();
+})();
+</script>
+</body>
+</html>

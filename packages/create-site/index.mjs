@@ -18,6 +18,13 @@ const dim = (s) => `\x1b[2m${s}\x1b[0m`;
 // ── Parse Args ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 
+// ── UI Mode ─────────────────────────────────────────────────────────────────
+if (args.includes('--ui')) {
+  const { startUI } = await import('./ui-server.mjs');
+  startUI(args);
+} else {
+// ── CLI Mode ────────────────────────────────────────────────────────────────
+
 // Find project name (first arg that doesn't start with --)
 const projectName = args.find(a => !a.startsWith('-'));
 const passthroughArgs = args.filter(a => a !== projectName);
@@ -133,3 +140,5 @@ ${bold('Next steps:')}
   console.error(red(`Failed to run setup: ${err.message}`));
   process.exit(1);
 }
+
+} // end CLI mode
