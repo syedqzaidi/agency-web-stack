@@ -6,3 +6,7 @@ allowBuilds:
   sharp: true
   supabase: true
   msw: true
+  "@sentry/cli": true
+  core-js: true
+  protobufjs: true
+  unrs-resolver: true
