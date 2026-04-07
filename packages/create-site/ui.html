@@ -251,17 +251,31 @@
   }
 
   // -- Folder Browser --
+  // Attach click listeners ONCE on containers (event delegation)
+  // This prevents stacking duplicate listeners on every re-render.
+  $('quickLocations').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-path]');
+    if (btn) loadFolders(btn.getAttribute('data-path'));
+  });
+  $('folderPath').addEventListener('click', function(e) {
+    var span = e.target.closest('[data-nav]');
+    if (span) loadFolders(span.getAttribute('data-nav'));
+  });
+  $('folderList').addEventListener('click', function(e) {
+    var item = e.target.closest('[data-nav]');
+    if (item) loadFolders(item.getAttribute('data-nav'));
+  });
+
   function renderQuickLocations(locations) {
     var el = $('quickLocations');
-    var html = '';
+    el.textContent = '';
     for (var i = 0; i < locations.length; i++) {
-      html += '<button class="btn btn-sm" data-path="' + esc(locations[i].path) + '">' + esc(locations[i].name) + '</button>';
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-sm';
+      btn.setAttribute('data-path', locations[i].path);
+      btn.textContent = locations[i].name;
+      el.appendChild(btn);
     }
-    el.innerHTML = html;
-    el.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-path]');
-      if (btn) loadFolders(btn.getAttribute('data-path'));
-    });
   }
 
   window.loadFolders = async function(dirPath) {
@@ -277,38 +291,54 @@
 
   function renderBreadcrumbs(p) {
     var el = $('folderPath');
+    el.textContent = '';
     var parts = p.split('/').filter(Boolean);
-    var html = '<span data-nav="/">/</span>';
+    var rootSpan = document.createElement('span');
+    rootSpan.setAttribute('data-nav', '/');
+    rootSpan.textContent = '/';
+    el.appendChild(rootSpan);
     var acc = '';
     for (var i = 0; i < parts.length; i++) {
       acc += '/' + parts[i];
-      html += ' <span data-nav="' + esc(acc) + '">' + esc(parts[i]) + '</span> /';
+      el.appendChild(document.createTextNode(' '));
+      var span = document.createElement('span');
+      span.setAttribute('data-nav', acc);
+      span.textContent = parts[i];
+      el.appendChild(span);
+      el.appendChild(document.createTextNode(' /'));
     }
-    el.innerHTML = html;
-    el.addEventListener('click', function(e) {
-      var span = e.target.closest('[data-nav]');
-      if (span) loadFolders(span.getAttribute('data-nav'));
-    });
   }
 
   function renderFolderList(data) {
     var el = $('folderList');
-    var html = '';
+    el.textContent = '';
     if (data.current !== data.parent) {
-      html += '<div class="folder-item" data-nav="' + esc(data.parent) + '"><span class="folder-icon">&#8593;</span> <span>..</span></div>';
+      var upItem = document.createElement('div');
+      upItem.className = 'folder-item';
+      upItem.setAttribute('data-nav', data.parent);
+      upItem.textContent = '.. (up)';
+      el.appendChild(upItem);
     }
     for (var i = 0; i < data.folders.length; i++) {
       var f = data.folders[i];
-      html += '<div class="folder-item" data-nav="' + esc(f.path) + '"><span class="folder-icon">&#128193;</span> <span>' + esc(f.name) + '</span></div>';
+      var item = document.createElement('div');
+      item.className = 'folder-item';
+      item.setAttribute('data-nav', f.path);
+      var icon = document.createElement('span');
+      icon.className = 'folder-icon';
+      icon.textContent = '\uD83D\uDCC1';
+      var name = document.createElement('span');
+      name.textContent = f.name;
+      item.appendChild(icon);
+      item.appendChild(name);
+      el.appendChild(item);
     }
     if (!data.folders.length && data.current === data.parent) {
-      html = '<div style="padding:14px;color:#666;font-size:0.85rem;">No subfolders</div>';
+      var empty = document.createElement('div');
+      empty.style.cssText = 'padding:14px;color:#666;font-size:0.85rem;';
+      empty.textContent = 'No subfolders';
+      el.appendChild(empty);
     }
-    el.innerHTML = html;
-    el.addEventListener('click', function(e) {
-      var item = e.target.closest('[data-nav]');
-      if (item) loadFolders(item.getAttribute('data-nav'));
-    });
   }
 
   window.selectCurrentFolder = function() {
