@@ -84,12 +84,16 @@ PORT_NEXTJS=$(( 3100 + PORT_OFFSET ))
 PORT_TWENTY=$(( 3200 + PORT_OFFSET ))
 PORT_SUPABASE_API=$(( 54321 + SUPABASE_OFFSET ))
 PORT_SUPABASE_DB=$(( 54322 + SUPABASE_OFFSET ))
+PORT_SUPABASE_SHADOW=$(( 54320 + SUPABASE_OFFSET ))
 PORT_SUPABASE_STUDIO=$(( 54323 + SUPABASE_OFFSET ))
 PORT_SUPABASE_MAILPIT=$(( 54324 + SUPABASE_OFFSET ))
+PORT_SUPABASE_ANALYTICS=$(( 54327 + SUPABASE_OFFSET ))
+PORT_SUPABASE_POOLER=$(( 54329 + SUPABASE_OFFSET ))
+PORT_SUPABASE_INSPECTOR=$(( 8083 + PORT_OFFSET ))
 
 info "Port offset for '${PROJECT_NAME}': ${PORT_OFFSET}"
 info "Ports — Astro: ${PORT_ASTRO}  Next.js: ${PORT_NEXTJS}  Twenty: ${PORT_TWENTY}"
-info "Supabase — API: ${PORT_SUPABASE_API}  DB: ${PORT_SUPABASE_DB}  Studio: ${PORT_SUPABASE_STUDIO}  Mailpit: ${PORT_SUPABASE_MAILPIT}"
+info "Supabase — API: ${PORT_SUPABASE_API}  DB: ${PORT_SUPABASE_DB}  Studio: ${PORT_SUPABASE_STUDIO}  Mailpit: ${PORT_SUPABASE_MAILPIT}  Analytics: ${PORT_SUPABASE_ANALYTICS}"
 
 # ---------------------------------------------------------------------------
 # STEP 1 — Prerequisites
@@ -200,21 +204,26 @@ if [[ -f "${SUPABASE_CONFIG}" ]]; then
   # Use Python for all section-aware port replacements in config.toml.
   # BSD sed (macOS) does not support addr1,addr2{compound-cmd} syntax,
   # so Python is the reliable cross-platform approach.
-  SHADOW_PORT=$(( PORT_SUPABASE_DB - 2 ))
   python3 - "${SUPABASE_CONFIG}" \
     "${PORT_SUPABASE_API}" \
     "${PORT_SUPABASE_DB}" \
-    "${SHADOW_PORT}" \
+    "${PORT_SUPABASE_SHADOW}" \
     "${PORT_SUPABASE_STUDIO}" \
-    "${PORT_SUPABASE_MAILPIT}" <<'PYEOF'
+    "${PORT_SUPABASE_MAILPIT}" \
+    "${PORT_SUPABASE_ANALYTICS}" \
+    "${PORT_SUPABASE_POOLER}" \
+    "${PORT_SUPABASE_INSPECTOR}" <<'PYEOF'
 import sys, re
 
-config_path   = sys.argv[1]
-api_port      = int(sys.argv[2])
-db_port       = int(sys.argv[3])
-shadow_port   = int(sys.argv[4])
-studio_port   = int(sys.argv[5])
-inbucket_port = int(sys.argv[6])
+config_path    = sys.argv[1]
+api_port       = int(sys.argv[2])
+db_port        = int(sys.argv[3])
+shadow_port    = int(sys.argv[4])
+studio_port    = int(sys.argv[5])
+inbucket_port  = int(sys.argv[6])
+analytics_port = int(sys.argv[7])
+pooler_port    = int(sys.argv[8])
+inspector_port = int(sys.argv[9])
 
 with open(config_path, 'r') as f:
     lines = f.readlines()
@@ -232,10 +241,16 @@ for line in lines:
         line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{db_port}', line)
     elif current_section == 'db' and re.match(r'^shadow_port\s*=\s*\d+', line):
         line = re.sub(r'^(shadow_port\s*=\s*)\d+', rf'\g<1>{shadow_port}', line)
+    elif current_section == 'db.pooler' and re.match(r'^port\s*=\s*\d+', line):
+        line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{pooler_port}', line)
     elif current_section == 'studio' and re.match(r'^port\s*=\s*\d+', line):
         line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{studio_port}', line)
     elif current_section == 'inbucket' and re.match(r'^port\s*=\s*\d+', line):
         line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{inbucket_port}', line)
+    elif current_section == 'analytics' and re.match(r'^port\s*=\s*\d+', line):
+        line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{analytics_port}', line)
+    elif current_section == 'edge_runtime' and re.match(r'^inspector_port\s*=\s*\d+', line):
+        line = re.sub(r'^(inspector_port\s*=\s*)\d+', rf'\g<1>{inspector_port}', line)
 
     result.append(line)
 
@@ -271,8 +286,12 @@ NEXTJS=${PORT_NEXTJS}
 TWENTY=${PORT_TWENTY}
 SUPABASE_API=${PORT_SUPABASE_API}
 SUPABASE_DB=${PORT_SUPABASE_DB}
+SUPABASE_SHADOW=${PORT_SUPABASE_SHADOW}
 SUPABASE_STUDIO=${PORT_SUPABASE_STUDIO}
 SUPABASE_MAILPIT=${PORT_SUPABASE_MAILPIT}
+SUPABASE_ANALYTICS=${PORT_SUPABASE_ANALYTICS}
+SUPABASE_POOLER=${PORT_SUPABASE_POOLER}
+SUPABASE_INSPECTOR=${PORT_SUPABASE_INSPECTOR}
 PORTS
 ok "Port assignments saved to .ports"
 
