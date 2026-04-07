@@ -6,31 +6,60 @@ Everything you need to build websites for clients. One command to set up, intera
 
 ## Quick Start
 
-Pick the option that suits you best. Each one ends with a working project.
+There are three ways to get started. **Cloning the repo alone is not enough** -- you must also install dependencies and run the setup wizard for everything to work.
 
-### Option A -- One Command (recommended)
+### Option A -- Clone from GitHub, then set up (most common)
 
-Open your Terminal app (on Mac, search for "Terminal" in Spotlight) and paste this command.
-Replace `my-project` with whatever you want to name your project:
+This is what you do if you clicked the green "Code" button on GitHub, or want to clone the repo yourself.
+
+**Step 1.** Open your Terminal app. On Mac, press `Cmd + Space`, type "Terminal", and press Enter.
+
+**Step 2.** Clone (download) the repo and go into the project folder. Replace `my-project` with your project name:
+
+```bash
+git clone https://github.com/syedqzaidi/agency-web-stack.git my-project
+cd my-project
+```
+
+**Step 3.** Install all dependencies. This downloads the libraries your project needs. It takes about 30-60 seconds:
+
+```bash
+pnpm install
+```
+
+**Step 4.** Run the interactive setup wizard. This walks you through choosing which tools you want (database, CMS, analytics, etc.):
+
+```bash
+node scripts/create-project.mjs
+```
+
+The wizard will ask you to pick your services using arrow keys and spacebar. When you are done, it removes the tools you do not need and cleans up the project.
+
+**Step 5.** Initialize your services. This generates secure passwords, starts Docker services (database, CRM), and configures everything:
+
+```bash
+./scripts/init-project.sh "my-project"
+```
+
+Replace `"my-project"` with the same name you used in Step 2.
+
+**Step 6.** Start your development servers (see "Starting Your Servers" section below).
+
+**IMPORTANT:** After cloning, your project will NOT work until you complete Steps 3-5. The repo only contains source code and configuration files -- it does not include the installed libraries or running services.
+
+### Option B -- One command does everything (recommended for speed)
+
+If you want to skip the manual steps above, this single command does Steps 1-5 automatically:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- my-project
 ```
 
-This will:
+This will download the template, install dependencies, launch the wizard, generate passwords, and start all services. Takes about 5 minutes on first run.
 
-1. Download the template to a new folder called `my-project`
-2. Walk you through choosing which tools you want (interactive wizard)
-3. Generate secure passwords automatically
-4. Start all your background services (database, email, etc.)
-5. Tell you the URLs to open in your browser
+### Option C -- One command with a preset (skip the wizard too)
 
-The whole process takes about 5 minutes on first run (mostly downloading).
-
-### Option B -- One Command with a Preset (skip the wizard)
-
-If you already know what you want, add a preset name to skip the wizard entirely.
-Replace `my-project` with your project name:
+If you already know which tools you want, add a preset to skip the wizard entirely:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- my-project --preset=marketing
@@ -47,34 +76,15 @@ Available presets:
 | `nextjs-minimal` | Simple Next.js app | Just Next.js with Tailwind CSS (no backend) |
 | `both-frameworks` | Multi-site projects | Both Astro and Next.js with Supabase and Sentry |
 
-### Option C -- Manual Setup (step by step)
+### Summary: What each step does and why
 
-If you prefer to run each step yourself:
-
-1. Download the template:
-
-   ```bash
-   git clone https://github.com/syedqzaidi/agency-web-stack.git my-project
-   cd my-project
-   ```
-
-2. Install dependencies (libraries the project needs):
-
-   ```bash
-   pnpm install
-   ```
-
-3. Choose your tools with the interactive wizard:
-
-   ```bash
-   node scripts/create-project.mjs
-   ```
-
-4. Start your background services and generate passwords:
-
-   ```bash
-   ./scripts/init-project.sh "my-project"
-   ```
+| Step | Command | What It Does | Why It Is Needed |
+|------|---------|-------------|-----------------|
+| Clone | `git clone ...` | Downloads the project files to your computer | You need the files before anything else |
+| Install | `pnpm install` | Downloads all the libraries the code depends on | Code will not run without its libraries |
+| Wizard | `node scripts/create-project.mjs` | Lets you pick which tools to include, removes the rest | Customizes the project for your needs |
+| Init | `./scripts/init-project.sh "name"` | Generates passwords, starts database and services | Services need secrets and Docker containers to run |
+| Dev servers | `pnpm dev:astro` / `pnpm dev:next` | Starts the website so you can see it in your browser | Nothing is visible until the server is running |
 
 ---
 
