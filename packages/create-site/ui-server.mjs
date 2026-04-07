@@ -110,7 +110,7 @@ export function startUI(args) {
 
       broadcast('status', 'Creating project...');
 
-      // Build the flags
+      // Build the flags for create-project.mjs (non-interactive mode)
       let flags = '';
       if (preset) {
         flags = `--preset=${preset}`;
@@ -118,8 +118,20 @@ export function startUI(args) {
         flags = services.map(s => `--${s}`).join(' ');
       }
 
-      // Run the bootstrap script
-      const cmd = `cd "${location}" && curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- ${projectName} ${flags}`;
+      // Run steps directly instead of bootstrap.sh (no TTY needed):
+      // 1. Clone the repo
+      // 2. Run create-project.mjs with flags (non-interactive)
+      // 3. Run init-project.sh
+      const REPO = 'https://github.com/syedqzaidi/agency-web-stack.git';
+      const cmd = [
+        `cd "${location}"`,
+        `git clone --depth=1 ${REPO} "${projectName}"`,
+        `rm -rf "${projectPath}/.git"`,
+        `cd "${projectPath}"`,
+        `pnpm install`,
+        `node scripts/create-project.mjs --name="${projectName}" ${flags} --no-install`,
+        `bash scripts/init-project.sh "${projectName}"`,
+      ].join(' && ');
 
       const proc = spawn('bash', ['-c', cmd], {
         env: { ...process.env, FORCE_COLOR: '0' },
