@@ -49,13 +49,21 @@ Replace `"my-project"` with the same name you used in Step 2.
 
 ### Option B -- One command does everything (recommended for speed)
 
-If you want to skip the manual steps above, this single command does Steps 1-5 automatically:
+If you want to skip the manual steps above, this single command does Steps 1-5 automatically.
+
+First, navigate to the folder where you want the project created. For example, to create it on your Desktop:
+
+```bash
+cd ~/Desktop
+```
+
+Then run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- my-project
 ```
 
-This will download the template, install dependencies, launch the wizard, generate passwords, and start all services. Takes about 5 minutes on first run.
+This creates a new folder called `my-project` inside your current location (in this example, `~/Desktop/my-project`). It then installs dependencies, launches the wizard, generates passwords, and starts all services. Takes about 5 minutes on first run.
 
 ### Option C -- One command with a preset (skip the wizard too)
 
