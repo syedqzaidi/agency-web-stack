@@ -60,15 +60,36 @@ PROJECT_NAME="$1"
 info "Project name: ${BOLD}${PROJECT_NAME}${RESET}"
 
 # ---------------------------------------------------------------------------
-# Port map (documented; referenced in summary)
+# Port allocation — unique per project name to avoid collisions when multiple
+# projects run simultaneously on the same machine.
 # ---------------------------------------------------------------------------
-PORT_ASTRO=4400
-PORT_NEXTJS=3100
-PORT_SUPABASE_API=54321
-PORT_SUPABASE_DB=54322
-PORT_SUPABASE_STUDIO=54323
-PORT_SUPABASE_MAILPIT=54324
-PORT_TWENTY=3001
+generate_port_offset() {
+  local name="$1"
+  # Simple hash: sum ASCII values of every character in the project name, mod 100
+  local hash=0
+  local i char
+  for (( i=0; i<${#name}; i++ )); do
+    char="${name:$i:1}"
+    hash=$(( hash + $(printf '%d' "'${char}") ))
+  done
+  echo $(( hash % 100 ))
+}
+
+PORT_OFFSET=$(generate_port_offset "${PROJECT_NAME}")
+# Supabase needs wider spacing because it allocates 4 consecutive ports
+SUPABASE_OFFSET=$(( (PORT_OFFSET % 50) * 10 ))
+
+PORT_ASTRO=$(( 4400 + PORT_OFFSET ))
+PORT_NEXTJS=$(( 3100 + PORT_OFFSET ))
+PORT_TWENTY=$(( 3200 + PORT_OFFSET ))
+PORT_SUPABASE_API=$(( 54321 + SUPABASE_OFFSET ))
+PORT_SUPABASE_DB=$(( 54322 + SUPABASE_OFFSET ))
+PORT_SUPABASE_STUDIO=$(( 54323 + SUPABASE_OFFSET ))
+PORT_SUPABASE_MAILPIT=$(( 54324 + SUPABASE_OFFSET ))
+
+info "Port offset for '${PROJECT_NAME}': ${PORT_OFFSET}"
+info "Ports — Astro: ${PORT_ASTRO}  Next.js: ${PORT_NEXTJS}  Twenty: ${PORT_TWENTY}"
+info "Supabase — API: ${PORT_SUPABASE_API}  DB: ${PORT_SUPABASE_DB}  Studio: ${PORT_SUPABASE_STUDIO}  Mailpit: ${PORT_SUPABASE_MAILPIT}"
 
 # ---------------------------------------------------------------------------
 # STEP 1 — Prerequisites
@@ -131,6 +152,129 @@ APP_SECRET=$(openssl rand -hex 32)
 
 ok "PAYLOAD_SECRET generated (${#PAYLOAD_SECRET} hex chars)"
 ok "APP_SECRET generated (${#APP_SECRET} hex chars)"
+
+# ---------------------------------------------------------------------------
+# STEP 3b — Apply unique port configuration to all config files
+# ---------------------------------------------------------------------------
+section "Step 3b — Configuring unique ports"
+
+# Astro port — astro.config.mjs server.port
+ASTRO_CONFIG="${PROJECT_ROOT}/templates/astro-site/astro.config.mjs"
+if [[ -f "${ASTRO_CONFIG}" ]]; then
+  sed -i.tmp "s/port: [0-9]*/port: ${PORT_ASTRO}/" "${ASTRO_CONFIG}"
+  rm -f "${ASTRO_CONFIG}.tmp"
+  ok "Astro port set to ${PORT_ASTRO}"
+else
+  warn "astro.config.mjs not found at ${ASTRO_CONFIG} — skipping Astro port update"
+fi
+
+# Next.js port — package.json dev script  --port flag
+NEXTJS_PKG="${PROJECT_ROOT}/templates/next-app/package.json"
+if [[ -f "${NEXTJS_PKG}" ]]; then
+  sed -i.tmp "s/--port [0-9]*/--port ${PORT_NEXTJS}/" "${NEXTJS_PKG}"
+  rm -f "${NEXTJS_PKG}.tmp"
+  ok "Next.js port set to ${PORT_NEXTJS}"
+else
+  warn "templates/next-app/package.json not found — skipping Next.js port update"
+fi
+
+# Twenty CRM port — docker-compose.yml host port mapping and env vars
+TWENTY_COMPOSE="${PROJECT_ROOT}/docker/twenty/docker-compose.yml"
+if [[ -f "${TWENTY_COMPOSE}" ]]; then
+  sed -i.tmp "s/\"[0-9]*:3000\"/\"${PORT_TWENTY}:3000\"/" "${TWENTY_COMPOSE}"
+  sed -i.tmp "s|SERVER_URL=http://localhost:[0-9]*|SERVER_URL=http://localhost:${PORT_TWENTY}|" "${TWENTY_COMPOSE}"
+  sed -i.tmp "s|FRONT_BASE_URL=http://localhost:[0-9]*|FRONT_BASE_URL=http://localhost:${PORT_TWENTY}|" "${TWENTY_COMPOSE}"
+  rm -f "${TWENTY_COMPOSE}.tmp"
+  ok "Twenty CRM port set to ${PORT_TWENTY}"
+else
+  warn "docker/twenty/docker-compose.yml not found — skipping Twenty port update"
+fi
+
+# Supabase ports — config.toml (section-aware replacements via Python)
+SUPABASE_CONFIG="${PROJECT_ROOT}/supabase/config.toml"
+if [[ -f "${SUPABASE_CONFIG}" ]]; then
+  # Update project_id to match project name (ensures unique Docker container names)
+  sed -i.tmp "s/^project_id = .*/project_id = \"${PROJECT_NAME}\"/" "${SUPABASE_CONFIG}"
+  rm -f "${SUPABASE_CONFIG}.tmp"
+
+  # Use Python for all section-aware port replacements in config.toml.
+  # BSD sed (macOS) does not support addr1,addr2{compound-cmd} syntax,
+  # so Python is the reliable cross-platform approach.
+  SHADOW_PORT=$(( PORT_SUPABASE_DB - 2 ))
+  python3 - "${SUPABASE_CONFIG}" \
+    "${PORT_SUPABASE_API}" \
+    "${PORT_SUPABASE_DB}" \
+    "${SHADOW_PORT}" \
+    "${PORT_SUPABASE_STUDIO}" \
+    "${PORT_SUPABASE_MAILPIT}" <<'PYEOF'
+import sys, re
+
+config_path   = sys.argv[1]
+api_port      = int(sys.argv[2])
+db_port       = int(sys.argv[3])
+shadow_port   = int(sys.argv[4])
+studio_port   = int(sys.argv[5])
+inbucket_port = int(sys.argv[6])
+
+with open(config_path, 'r') as f:
+    lines = f.readlines()
+
+current_section = None
+result = []
+for line in lines:
+    section_match = re.match(r'^\[([^\]]+)\]', line)
+    if section_match:
+        current_section = section_match.group(1)
+
+    if current_section == 'api' and re.match(r'^port\s*=\s*\d+', line):
+        line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{api_port}', line)
+    elif current_section == 'db' and re.match(r'^port\s*=\s*\d+', line):
+        line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{db_port}', line)
+    elif current_section == 'db' and re.match(r'^shadow_port\s*=\s*\d+', line):
+        line = re.sub(r'^(shadow_port\s*=\s*)\d+', rf'\g<1>{shadow_port}', line)
+    elif current_section == 'studio' and re.match(r'^port\s*=\s*\d+', line):
+        line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{studio_port}', line)
+    elif current_section == 'inbucket' and re.match(r'^port\s*=\s*\d+', line):
+        line = re.sub(r'^(port\s*=\s*)\d+', rf'\g<1>{inbucket_port}', line)
+
+    result.append(line)
+
+with open(config_path, 'w') as f:
+    f.writelines(result)
+PYEOF
+  if [[ $? -eq 0 ]]; then
+    ok "Supabase ports configured (API=${PORT_SUPABASE_API}, DB=${PORT_SUPABASE_DB}, Studio=${PORT_SUPABASE_STUDIO}, Mailpit=${PORT_SUPABASE_MAILPIT})"
+  else
+    warn "Python port update for Supabase config.toml failed — you may need to edit supabase/config.toml manually"
+  fi
+else
+  warn "supabase/config.toml not found — skipping Supabase port update"
+fi
+
+# .env.template — update port references so future copies pick up correct defaults
+ENV_TEMPLATE="${PROJECT_ROOT}/.env.template"
+if [[ -f "${ENV_TEMPLATE}" ]]; then
+  sed -i.tmp "s|TWENTY_API_URL=http://localhost:[0-9]*|TWENTY_API_URL=http://localhost:${PORT_TWENTY}|" "${ENV_TEMPLATE}"
+  sed -i.tmp "s|DATABASE_URL=postgresql://postgres:postgres@localhost:[0-9]*/postgres|DATABASE_URL=postgresql://postgres:postgres@localhost:${PORT_SUPABASE_DB}/postgres|" "${ENV_TEMPLATE}"
+  sed -i.tmp "s|NEXT_PUBLIC_SERVER_URL=http://localhost:[0-9]*|NEXT_PUBLIC_SERVER_URL=http://localhost:${PORT_NEXTJS}|" "${ENV_TEMPLATE}"
+  rm -f "${ENV_TEMPLATE}.tmp"
+  ok ".env.template updated with project ports"
+fi
+
+# Write a .ports reference file for tooling / scripts to source
+cat > "${PROJECT_ROOT}/.ports" <<PORTS
+# Auto-generated port assignments for: ${PROJECT_NAME}
+# Offset: ${PORT_OFFSET}
+# Regenerated each time init-project.sh is run.
+ASTRO=${PORT_ASTRO}
+NEXTJS=${PORT_NEXTJS}
+TWENTY=${PORT_TWENTY}
+SUPABASE_API=${PORT_SUPABASE_API}
+SUPABASE_DB=${PORT_SUPABASE_DB}
+SUPABASE_STUDIO=${PORT_SUPABASE_STUDIO}
+SUPABASE_MAILPIT=${PORT_SUPABASE_MAILPIT}
+PORTS
+ok "Port assignments saved to .ports"
 
 # ---------------------------------------------------------------------------
 # STEP 4 — Create .env.local from .env.template
