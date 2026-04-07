@@ -528,7 +528,12 @@ else
   sleep 5
 
   info "Stopping Next.js dev server (PID ${NEXTJS_PID})…"
+  # Kill the entire process group — Next.js/Turbopack spawns child processes
+  # that don't die with a simple kill of the parent PID
   kill "${NEXTJS_PID}" 2>/dev/null || true
+  sleep 2
+  # Force kill anything still on the port
+  lsof -ti:"${PORT_NEXTJS}" 2>/dev/null | xargs kill -9 2>/dev/null || true
   wait "${NEXTJS_PID}" 2>/dev/null || true
   rm -f "${NEXTJS_PID_FILE}"
 
