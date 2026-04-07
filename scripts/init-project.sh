@@ -328,8 +328,19 @@ rm -f "${ENV_LOCAL}.tmp"
 
 ok ".env.local created at ${ENV_LOCAL}"
 
+# Copy .env.local into each template directory — Next.js and Astro only read
+# .env.local from their own directory, not the project root.
+if [[ -d "${PROJECT_ROOT}/templates/next-app" ]]; then
+  cp "${ENV_LOCAL}" "${PROJECT_ROOT}/templates/next-app/.env.local"
+  ok ".env.local copied to templates/next-app/"
+fi
+if [[ -d "${PROJECT_ROOT}/templates/astro-site" ]]; then
+  cp "${ENV_LOCAL}" "${PROJECT_ROOT}/templates/astro-site/.env.local"
+  ok ".env.local copied to templates/astro-site/"
+fi
+
 # ---------------------------------------------------------------------------
-# STEP 5 — Write docker/twenty/.env
+# Write docker/twenty/.env
 # ---------------------------------------------------------------------------
 section "Writing docker/twenty/.env"
 
@@ -427,6 +438,14 @@ if [[ "${SUPABASE_SKIPPED}" != "true" ]]; then
     sed -i.tmp "s|^PUBLIC_SUPABASE_ANON_KEY=.*|PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}|"     "${ENV_LOCAL}"
     rm -f "${ENV_LOCAL}.tmp"
     ok ".env.local patched with Supabase keys"
+    # Re-copy to template directories with the updated keys
+    if [[ -d "${PROJECT_ROOT}/templates/next-app" ]]; then
+      cp "${ENV_LOCAL}" "${PROJECT_ROOT}/templates/next-app/.env.local"
+    fi
+    if [[ -d "${PROJECT_ROOT}/templates/astro-site" ]]; then
+      cp "${ENV_LOCAL}" "${PROJECT_ROOT}/templates/astro-site/.env.local"
+    fi
+    ok ".env.local synced to template directories"
   fi
 fi
 
