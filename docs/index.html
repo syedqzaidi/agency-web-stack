@@ -277,13 +277,18 @@ function findMatchingPreset(services) {
   return null;
 }
 
+function quotePath(p) {
+  // Wrap in quotes if path contains spaces
+  return p.indexOf(' ') !== -1 ? '"' + p + '"' : p;
+}
+
 function generateCommand() {
-  var name = $('projectName').value || 'my-project';
+  var name = slugify($('projectName').value) || 'my-project';
   var loc = activeLocation;
   var services = getSelectedServices();
   var preset = findMatchingPreset(services);
   var flags = preset ? '--preset=' + preset : services.map(function(s) { return '--' + s; }).join(' ');
-  var cmd = 'cd ' + loc + ' && curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- ' + name + ' ' + flags;
+  var cmd = 'cd ' + quotePath(loc) + ' && curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- ' + name + ' ' + flags;
   $('command').textContent = cmd;
 }
 
@@ -328,7 +333,7 @@ function updateAfterSetup() {
     frag.appendChild(card);
   }
 
-  addCmd('Navigate to your project folder:', 'cd ' + loc + '/' + name);
+  addCmd('Navigate to your project folder:', 'cd ' + quotePath(loc + '/' + name));
   if (hasAstro) addCmd('Start Astro website:', 'pnpm dev:astro', 'Keep this terminal open while developing');
   if (hasNext) addCmd('Start Next.js app' + (hasPayload ? ' + CMS admin:' : ':'), 'pnpm dev:next', 'Open a second terminal window for this');
   cmdEl.appendChild(frag);
