@@ -54,6 +54,15 @@
     footer{text-align:center;padding:2rem 0 3rem;border-top:1px solid #1a1a1a;margin-top:2rem;font-size:.85rem;color:#555}
     footer a{margin:0 .75rem}
     .custom-loc{margin-top:.75rem;display:none}.custom-loc.visible{display:block}
+    .url-table{width:100%;border-collapse:collapse;font-size:.88rem}
+    .url-table th{text-align:left;color:#666;font-weight:600;padding:.5rem .75rem;border-bottom:1px solid #222;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+    .url-table td{padding:.55rem .75rem;border-bottom:1px solid #1a1a1a;color:#bbb}
+    .url-table td:first-child{color:#ddd;font-weight:500}
+    .url-table a{color:#60a5fa;font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:.82rem}
+    .cmd-card{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:.85rem 1rem;margin-bottom:.6rem}
+    .cmd-card-label{font-size:.82rem;color:#888;margin-bottom:.35rem}
+    .cmd-card-code{font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:.88rem;color:#a5f3fc}
+    .cmd-card-note{font-size:.78rem;color:#666;margin-top:.3rem}
     @media(max-width:500px){.cards,.presets{grid-template-columns:1fr 1fr}header h1{font-size:1.5rem}.container{padding:1.5rem 1rem}}
   </style>
 </head>
@@ -127,6 +136,20 @@
       <li>The wizard will guide you through setup (~5 minutes)</li>
       <li>Your project URLs will be printed at the end</li>
     </ol>
+  </div>
+
+  <div class="step">
+    <div class="step-label">Step 6</div>
+    <h2>Start Your Dev Servers</h2>
+    <p style="color:#888;font-size:.9rem;margin-bottom:1rem">After setup completes, you need to start the dev servers to see your site. Open a new Terminal window and run:</p>
+    <div id="devCommands"></div>
+  </div>
+
+  <div class="step">
+    <div class="step-label">Step 7</div>
+    <h2>Your Service URLs</h2>
+    <p style="color:#888;font-size:.9rem;margin-bottom:1rem">These URLs become available after starting your servers. Port numbers are unique to your project — check the terminal output for exact ports.</p>
+    <div id="serviceUrls"></div>
   </div>
 
   <details>
@@ -275,6 +298,78 @@ $('copyBtn').addEventListener('click', function() {
 });
 
 generateCommand();
+updateAfterSetup();
+
+// Note: innerHTML is safe here — all values are generated from hardcoded strings
+// and slugified user input (no untrusted HTML). This is a static page with no backend.
+function updateAfterSetup() {
+  var services = getSelectedServices();
+  var name = slugify($('projectName').value) || 'my-project';
+  var loc = activeLocation;
+  var hasAstro = services.indexOf('astro') !== -1;
+  var hasNext = services.indexOf('nextjs') !== -1;
+  var hasPayload = services.indexOf('payload') !== -1;
+  var hasSupabase = services.indexOf('supabase') !== -1;
+  var hasTwenty = services.indexOf('twenty') !== -1;
+
+  var cmdEl = $('devCommands');
+  var urlEl = $('serviceUrls');
+
+  // Build dev commands using DOM methods
+  cmdEl.textContent = '';
+  var frag = document.createDocumentFragment();
+
+  function addCmd(label, code, note) {
+    var card = document.createElement('div'); card.className = 'cmd-card';
+    var lbl = document.createElement('div'); lbl.className = 'cmd-card-label'; lbl.textContent = label;
+    var cd = document.createElement('div'); cd.className = 'cmd-card-code'; cd.textContent = code;
+    card.appendChild(lbl); card.appendChild(cd);
+    if (note) { var n = document.createElement('div'); n.className = 'cmd-card-note'; n.textContent = note; card.appendChild(n); }
+    frag.appendChild(card);
+  }
+
+  addCmd('Navigate to your project folder:', 'cd ' + loc + '/' + name);
+  if (hasAstro) addCmd('Start Astro website:', 'pnpm dev:astro', 'Keep this terminal open while developing');
+  if (hasNext) addCmd('Start Next.js app' + (hasPayload ? ' + CMS admin:' : ':'), 'pnpm dev:next', 'Open a second terminal window for this');
+  cmdEl.appendChild(frag);
+
+  // Build service URLs table using DOM methods
+  urlEl.textContent = '';
+  var rows = [];
+  if (hasAstro) rows.push(['Astro Website', 'Your marketing / SEO site', 'Shown in terminal when server starts']);
+  if (hasNext) rows.push(['Next.js App', 'Dashboard / web application', 'Shown in terminal when server starts']);
+  if (hasPayload) rows.push(['Payload CMS Admin', 'Manage content, pages, media', 'Next.js URL + /admin']);
+  if (hasSupabase) { rows.push(['Supabase Studio', 'Database management GUI', 'Shown during setup']); rows.push(['Supabase Mailpit', 'Test email inbox', 'Shown during setup']); }
+  if (hasTwenty) rows.push(['Twenty CRM', 'Contact and deal tracking', 'Shown during setup']);
+
+  if (rows.length > 0) {
+    var table = document.createElement('table'); table.className = 'url-table';
+    var thead = document.createElement('thead');
+    var hr = document.createElement('tr');
+    ['Service', 'What It Is', 'URL'].forEach(function(h) { var th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+    thead.appendChild(hr); table.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    rows.forEach(function(r) {
+      var tr = document.createElement('tr');
+      r.forEach(function(cell) { var td = document.createElement('td'); td.textContent = cell; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody); urlEl.appendChild(table);
+    var note = document.createElement('p'); note.style.cssText = 'color:#666;font-size:.78rem;margin-top:.75rem';
+    note.textContent = 'Exact port numbers are unique to your project and shown at the end of setup. They are also saved in the .ports file in your project folder.';
+    urlEl.appendChild(note);
+  } else {
+    var p = document.createElement('p'); p.style.cssText = 'color:#666;font-size:.88rem';
+    p.textContent = 'No backend services selected — just run your dev server.';
+    urlEl.appendChild(p);
+  }
+}
+
+$('projectName').addEventListener('input', updateAfterSetup);
+$('locationCards').addEventListener('click', function() { setTimeout(updateAfterSetup, 50); });
+$('customPath').addEventListener('input', updateAfterSetup);
+$('presets').addEventListener('click', function() { setTimeout(updateAfterSetup, 50); });
+$('checkboxes').addEventListener('change', updateAfterSetup);
 </script>
 </body>
 </html>
