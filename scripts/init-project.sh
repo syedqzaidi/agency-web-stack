@@ -433,27 +433,16 @@ fi
 # ---------------------------------------------------------------------------
 section "Step 8 — Booting Next.js to trigger Payload CMS table creation"
 
-NEXTJS_LOG="/tmp/${PROJECT_NAME}-nextjs-boot.log"
-NEXTJS_PID_FILE="/tmp/${PROJECT_NAME}-nextjs.pid"
+# Skip if Payload config doesn't exist (Payload or Next.js was not selected)
+NEXTJS_APP_DIR="${PROJECT_ROOT}/templates/next-app"
+PAYLOAD_CONFIG="${NEXTJS_APP_DIR}/src/payload.config.ts"
 
-# Locate the Next.js package directory
-# Try common monorepo layouts: apps/web, apps/nextjs, packages/web, or root
-NEXTJS_APP_DIR=""
-for candidate in \
-  "${PROJECT_ROOT}/apps/web" \
-  "${PROJECT_ROOT}/apps/nextjs" \
-  "${PROJECT_ROOT}/apps/cms" \
-  "${PROJECT_ROOT}/packages/web" \
-  "${PROJECT_ROOT}"; do
-  if [[ -f "${candidate}/next.config.js" ]] || [[ -f "${candidate}/next.config.ts" ]] || [[ -f "${candidate}/next.config.mjs" ]]; then
-    NEXTJS_APP_DIR="${candidate}"
-    break
-  fi
-done
-
-if [[ -z "${NEXTJS_APP_DIR}" ]]; then
-  warn "Could not locate a Next.js app directory — skipping Payload boot step"
-  warn "You may need to manually run your Next.js app once to create Payload tables."
+if [[ ! -f "${PAYLOAD_CONFIG}" ]]; then
+  warn "Payload CMS was not selected — skipping Next.js boot step"
+elif [[ ! -d "${NEXTJS_APP_DIR}" ]]; then
+  warn "Next.js template not found — skipping Payload boot step"
+elif [[ "${SUPABASE_SKIPPED}" == "true" ]]; then
+  warn "Supabase not running — Payload needs a database. Skipping boot step"
 else
   info "Found Next.js app at: ${NEXTJS_APP_DIR}"
   info "Starting Next.js in dev mode (logging to ${NEXTJS_LOG})…"
@@ -506,6 +495,11 @@ fi
 # ---------------------------------------------------------------------------
 section "Step 9 — Applying Row-Level Security on Payload CMS tables"
 
+# Skip if Supabase was not selected
+if [[ "${SUPABASE_SKIPPED}" == "true" ]]; then
+  warn "Supabase was not selected — skipping RLS step"
+else
+
 # Payload tables are created outside Supabase migrations, so RLS must be
 # applied separately. We discover all tables created in the public schema
 # that do not already have RLS enabled.
@@ -543,6 +537,8 @@ else
   ok "RLS: enabled on ${RLS_APPLIED} table(s), already enabled on ${RLS_SKIPPED} table(s)"
 fi
 
+fi  # end Supabase RLS guard
+
 # ---------------------------------------------------------------------------
 # STEP 10 — Run validation script
 # ---------------------------------------------------------------------------
@@ -566,33 +562,48 @@ fi
 section "Setup Complete — Summary for: ${BOLD}${PROJECT_NAME}${RESET}"
 
 echo ""
-echo -e "${BOLD}URLs${RESET}"
-echo -e "  Astro (static/marketing)    http://localhost:${PORT_ASTRO}"
-echo -e "  Next.js / Payload CMS       http://localhost:${PORT_NEXTJS}"
-echo -e "  Payload Admin               http://localhost:${PORT_NEXTJS}/admin"
-echo -e "  Supabase Studio             http://localhost:${PORT_SUPABASE_STUDIO}"
-echo -e "  Supabase API                ${SUPABASE_API_URL:-http://127.0.0.1:${PORT_SUPABASE_API}}"
-echo -e "  Supabase Mailpit            http://localhost:${PORT_SUPABASE_MAILPIT}"
-echo -e "  Twenty CRM                  http://localhost:${PORT_TWENTY}"
+echo -e "${BOLD}URLs (only for services you selected)${RESET}"
+[[ -f "${PROJECT_ROOT}/templates/astro-site/astro.config.mjs" ]] && \
+  echo -e "  Astro (marketing site)      http://localhost:${PORT_ASTRO}"
+[[ -f "${PROJECT_ROOT}/templates/next-app/next.config.ts" ]] && \
+  echo -e "  Next.js (app/dashboard)     http://localhost:${PORT_NEXTJS}"
+[[ -f "${PROJECT_ROOT}/templates/next-app/src/payload.config.ts" ]] && \
+  echo -e "  Payload CMS Admin           http://localhost:${PORT_NEXTJS}/admin"
+[[ -d "${PROJECT_ROOT}/supabase" ]] && \
+  echo -e "  Supabase Studio             http://localhost:${PORT_SUPABASE_STUDIO}"
+[[ -d "${PROJECT_ROOT}/supabase" ]] && \
+  echo -e "  Supabase API                ${SUPABASE_API_URL:-http://127.0.0.1:${PORT_SUPABASE_API}}"
+[[ -d "${PROJECT_ROOT}/supabase" ]] && \
+  echo -e "  Supabase Mailpit            http://localhost:${PORT_SUPABASE_MAILPIT}"
+[[ -d "${PROJECT_ROOT}/docker/twenty" ]] && \
+  echo -e "  Twenty CRM                  http://localhost:${PORT_TWENTY}"
 
 echo ""
-echo -e "${BOLD}Generated Secrets (stored in .env.local & docker/twenty/.env)${RESET}"
-echo -e "  PAYLOAD_SECRET              ${PAYLOAD_SECRET:0:16}…  (truncated)"
-echo -e "  APP_SECRET (Twenty CRM)     ${APP_SECRET:0:16}…  (truncated)"
-echo -e "  SUPABASE_ANON_KEY           ${SUPABASE_ANON_KEY:0:20}…  (truncated)"
-echo -e "  SUPABASE_SERVICE_ROLE_KEY   ${SUPABASE_SERVICE_ROLE_KEY:0:20}…  (truncated)"
-
-echo ""
-echo -e "${BOLD}Files Created / Modified${RESET}"
-echo -e "  ${PROJECT_ROOT}/.env.local"
-echo -e "  ${TWENTY_ENV_DIR}/.env"
+echo -e "${BOLD}Generated Secrets${RESET}"
+[[ -f "${PROJECT_ROOT}/templates/next-app/src/payload.config.ts" ]] && \
+  echo -e "  PAYLOAD_SECRET              ${PAYLOAD_SECRET:0:16}…  (truncated)"
+[[ -d "${PROJECT_ROOT}/docker/twenty" ]] && \
+  echo -e "  APP_SECRET (Twenty CRM)     ${APP_SECRET:0:16}…  (truncated)"
+[[ "${SUPABASE_SKIPPED}" != "true" ]] && [[ -n "${SUPABASE_ANON_KEY:-}" ]] && \
+  echo -e "  SUPABASE_ANON_KEY           ${SUPABASE_ANON_KEY:0:20}…  (truncated)"
+[[ "${SUPABASE_SKIPPED}" != "true" ]] && [[ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]] && \
+  echo -e "  SUPABASE_SERVICE_ROLE_KEY   ${SUPABASE_SERVICE_ROLE_KEY:0:20}…  (truncated)"
 
 echo ""
 echo -e "${BOLD}Next Steps${RESET}"
 echo -e "  1. Fill in optional keys in .env.local (PostHog, Sentry, Resend, etc.)"
-echo -e "  2. Start Astro dev server:    ${CYAN}pnpm --filter astro dev${RESET}"
-echo -e "  3. Start Next.js dev server:  ${CYAN}pnpm --filter web dev${RESET}  (or your app name)"
-echo -e "  4. Open Payload Admin and create your first user: http://localhost:${PORT_NEXTJS}/admin"
-echo -e "  5. Configure Twenty CRM at: http://localhost:${PORT_TWENTY}"
+HAS_ASTRO=false; HAS_NEXT=false
+[[ -f "${PROJECT_ROOT}/templates/astro-site/astro.config.mjs" ]] && HAS_ASTRO=true
+[[ -f "${PROJECT_ROOT}/templates/next-app/next.config.ts" ]] && HAS_NEXT=true
+if [[ "${HAS_ASTRO}" == true ]]; then
+  echo -e "  2. Start Astro dev server:    ${CYAN}pnpm dev:astro${RESET}"
+fi
+if [[ "${HAS_NEXT}" == true ]]; then
+  echo -e "  $([[ "${HAS_ASTRO}" == true ]] && echo "3" || echo "2"). Start Next.js dev server:  ${CYAN}pnpm dev:next${RESET}"
+fi
+[[ -f "${PROJECT_ROOT}/templates/next-app/src/payload.config.ts" ]] && \
+  echo -e "  Open Payload Admin and create your first user: http://localhost:${PORT_NEXTJS}/admin"
+[[ -d "${PROJECT_ROOT}/docker/twenty" ]] && \
+  echo -e "  Configure Twenty CRM at: http://localhost:${PORT_TWENTY}"
 echo ""
 echo -e "${GREEN}${BOLD}Project '${PROJECT_NAME}' is ready to go!${RESET}"
