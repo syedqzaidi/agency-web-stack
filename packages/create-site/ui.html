@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agency Web Stack - Project Creator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -18,7 +19,7 @@
   .container { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; }
 
   /* -- Header -- */
-  header { text-align: center; padding: 3rem 0 2rem; }
+  header { text-align: center; padding: 3rem 0 2rem; animation: fadeSlideIn 300ms ease-out; }
   header h1 { font-size: 1.75rem; font-weight: 700; color: #fafafa; letter-spacing: -0.02em; }
   header p { color: #71717a; margin-top: 0.5rem; font-size: 0.95rem; }
   header::after {
@@ -31,7 +32,11 @@
   .card {
     background: #18181b; border: 1px solid #27272a; border-radius: 0.75rem;
     padding: 1.5rem; margin-bottom: 1.5rem;
+    animation: fadeSlideIn 400ms ease-out backwards;
   }
+  .card:nth-child(2) { animation-delay: 100ms; }
+  .card:nth-child(3) { animation-delay: 200ms; }
+  .card:nth-child(4) { animation-delay: 300ms; }
 
   .section-title {
     font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
@@ -43,11 +48,13 @@
   /* -- Buttons -- */
   .btn-primary {
     background: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem;
-    font-weight: 600; border: none; cursor: pointer; transition: background 150ms ease;
+    font-weight: 600; border: none; cursor: pointer; transition: background 150ms ease, transform 100ms ease;
     width: 100%; font-size: 1rem; font-family: inherit;
   }
   .btn-primary:hover { background: #1d4ed8; }
+  .btn-primary:active { transform: scale(0.98); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary.creating { animation: pulseText 1.5s ease-in-out infinite; }
 
   .btn-outline {
     background: transparent; color: #e4e4e7; border: 1px solid #3f3f46;
@@ -136,7 +143,7 @@
     display: none; margin-top: 1rem;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
   }
-  .terminal.visible { display: block; }
+  .terminal.visible { display: block; animation: fadeSlideIn 300ms ease-out; }
 
   /* -- Banners -- */
   .error-banner {
@@ -144,20 +151,20 @@
     padding: 0.75rem 1rem; border-radius: 0.375rem; font-size: 0.875rem;
     margin-top: 0.75rem; display: none;
   }
-  .error-banner.visible { display: block; }
+  .error-banner.visible { display: block; animation: shake 300ms ease-out, fadeSlideIn 300ms ease-out; }
   .success-banner {
     background: #052e16; border: 1px solid #166534; color: #86efac;
     padding: 0.75rem 1rem; border-radius: 0.375rem; font-size: 0.875rem;
     margin-top: 0.75rem; display: none;
   }
-  .success-banner.visible { display: block; }
+  .success-banner.visible { display: block; animation: fadeSlideIn 300ms ease-out; }
 
   /* -- Server Panel -- */
   .server-panel {
     display: none; background: #18181b; border: 1px solid #27272a;
     border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;
   }
-  .server-panel.visible { display: block; }
+  .server-panel.visible { display: block; animation: fadeSlideIn 400ms ease-out 200ms backwards; }
 
   .server-row {
     display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0;
@@ -179,7 +186,7 @@
     color: #71717a; white-space: pre-wrap; word-break: break-all; display: none;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
   }
-  .server-logs.visible { display: block; }
+  .server-logs.visible { display: block; animation: fadeSlideIn 300ms ease-out; }
 
   /* -- URL Table -- */
   .url-table { width: 100%; border-collapse: collapse; }
@@ -199,6 +206,116 @@
   footer { text-align: center; padding: 2rem 0; border-top: 1px solid #27272a; margin-top: 1rem; }
   footer a { color: #71717a; text-decoration: none; font-size: 0.8rem; transition: color 150ms ease; }
   footer a:hover { color: #a1a1aa; }
+
+  /* -- Health Status -- */
+  .health-panel {
+    display: none; background: #18181b; border: 1px solid #27272a;
+    border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .health-panel.visible { display: block; animation: fadeSlideIn 400ms ease-out; }
+
+  .health-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem; margin-top: 0.75rem;
+  }
+
+  .health-card {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; border: 1px solid #27272a; border-radius: 0.5rem;
+    background: #09090b; transition: border-color 300ms ease;
+  }
+  .health-card.healthy { border-color: #166534; }
+  .health-card.starting { border-color: #854d0e; }
+
+  .health-indicator { flex-shrink: 0; width: 20px; height: 20px; position: relative; }
+  .health-dot {
+    width: 10px; height: 10px; border-radius: 50%; position: absolute;
+    top: 5px; left: 5px;
+  }
+  .health-dot.healthy { background: #22c55e; animation: healthyPulse 2s ease-in-out infinite; }
+  .health-dot.starting { background: transparent; }
+  .health-dot.running { background: #3b82f6; }
+  .health-dot.exited { background: #ef4444; }
+  .health-dot.unknown { background: #3f3f46; }
+
+  .health-spinner {
+    width: 18px; height: 18px; border: 2px solid #854d0e;
+    border-top-color: #eab308; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    position: absolute; top: 1px; left: 1px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes healthyPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+    50% { box-shadow: 0 0 12px rgba(34,197,94,0.6); }
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeSlideOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(8px); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-3px); }
+    40%, 80% { transform: translateX(3px); }
+  }
+  @keyframes pulseText {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .health-info { flex: 1; min-width: 0; }
+  .health-name { font-size: 0.85rem; font-weight: 600; color: #fafafa; }
+  .health-status { font-size: 0.75rem; color: #71717a; margin-top: 1px; }
+  .health-status.starting { color: #eab308; }
+  .health-status.healthy { color: #22c55e; }
+
+  .health-note {
+    margin-top: 0.75rem; padding: 0.625rem 0.875rem;
+    background: #1c1917; border: 1px solid #854d0e; border-radius: 0.375rem;
+    font-size: 0.8rem; color: #fbbf24; display: none;
+  }
+  .health-note.visible { display: block; animation: fadeSlideIn 300ms ease-out; }
+
+  .btn-danger {
+    background: transparent; color: #f87171; border: 1px solid #7f1d1d;
+    padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500;
+    cursor: pointer; transition: all 150ms ease; font-family: inherit; font-size: 0.85rem;
+    margin-top: 1rem;
+  }
+  .btn-danger:hover { background: #450a0a; }
+  .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* -- Validate Panel -- */
+  .validate-panel {
+    display: none; background: #18181b; border: 1px solid #27272a;
+    border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .validate-panel.visible { display: block; animation: fadeSlideIn 400ms ease-out 100ms backwards; }
+  .validate-output {
+    margin-top: 0.75rem; font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace;
+    font-size: 0.8rem; background: #09090b; border: 1px solid #27272a;
+    border-radius: 0.5rem; padding: 1rem; max-height: 400px; overflow-y: auto;
+    color: #a1a1aa; white-space: pre-wrap; word-break: break-all; line-height: 1.6;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .validate-summary {
+    margin-top: 0.75rem; padding: 0.625rem 0.875rem;
+    border-radius: 0.375rem; font-size: 0.85rem; display: none;
+  }
+  .validate-summary.visible { display: block; animation: fadeSlideIn 300ms ease-out; }
+  .validate-summary.pass { background: #052e16; border: 1px solid #166534; color: #86efac; }
+  .validate-summary.fail { background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; }
+  .btn-validate {
+    background: transparent; color: #a78bfa; border: 1px solid #5b21b6;
+    padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500;
+    cursor: pointer; transition: all 150ms ease; font-family: inherit; font-size: 0.85rem;
+  }
+  .btn-validate:hover { background: #2e1065; }
+  .btn-validate:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* -- Scrollbar -- */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -265,6 +382,24 @@
     <div class="terminal" id="terminal"></div>
   </div>
 
+  <!-- Docker Health Status -->
+  <div class="health-panel" id="healthPanel">
+    <div class="section-title">Docker Services</div>
+    <div class="health-grid" id="healthGrid"></div>
+    <div class="health-note" id="twentyNote">Twenty CRM is running database migrations on first boot. This typically takes 60-90 seconds — the spinner will turn green when it's ready.</div>
+    <button class="btn-danger" id="stopAllBtn" onclick="stopAllServices()">Stop All Services</button>
+  </div>
+
+  <!-- Validate Project -->
+  <div class="validate-panel" id="validatePanel">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="section-title" style="margin-bottom:0">Project Validation</div>
+      <button class="btn-validate" id="validateBtn" onclick="validateProject()">Run Validation</button>
+    </div>
+    <div class="validate-output" id="validateOutput" style="display:none"></div>
+    <div class="validate-summary" id="validateSummary"></div>
+  </div>
+
   <!-- Dev Servers -->
   <div class="server-panel" id="serverPanel">
     <div class="section-title">Dev Servers</div>
@@ -282,7 +417,7 @@
   </div>
 
   <footer>
-    <a href="https://github.com" target="_blank">GitHub</a>
+    <a href="https://github.com/syedqzaidi/agency-web-stack" target="_blank">GitHub</a>
   </footer>
 </div>
 
@@ -332,7 +467,7 @@
 
   // -- Helpers --
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-  function escAttr(s) { return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+  // escAttr removed — server row IDs are hardcoded strings, not user input
   function $(id) { return document.getElementById(id); }
 
   // -- Init --
@@ -347,10 +482,12 @@
     connectSSE();
   }
 
-  // -- SSE --
+  // -- SSE (with automatic reconnection and backoff) --
+  var sseRetryDelay = 1000;
   function connectSSE() {
     var evtSource = new EventSource('/api/logs');
     evtSource.onmessage = function(e) {
+      sseRetryDelay = 1000; // Reset backoff on successful message
       var msg = JSON.parse(e.data);
       switch (msg.type) {
         case 'log': appendTerminal(msg.data); break;
@@ -359,7 +496,17 @@
         case 'server-log': appendServerLog(msg.data.server, msg.data.text); break;
         case 'server-ready': onServerReady(msg.data.server, msg.data.port); break;
         case 'server-stopped': onServerStopped(msg.data.server); break;
+        case 'health': onHealthUpdate(msg.data); break;
+        case 'all-stopped': onAllStopped(); break;
+        case 'validate-log': appendValidateLog(msg.data); break;
+        case 'validate-done': onValidateDone(msg.data); break;
       }
+    };
+    evtSource.onerror = function() {
+      evtSource.close();
+      // Exponential backoff: 1s, 2s, 4s, 8s, max 30s
+      setTimeout(connectSSE, sseRetryDelay);
+      sseRetryDelay = Math.min(sseRetryDelay * 2, 30000);
     };
   }
 
@@ -377,6 +524,14 @@
   $('folderList').addEventListener('click', function(e) {
     var item = e.target.closest('[data-nav]');
     if (item) loadFolders(item.getAttribute('data-nav'));
+  });
+
+  // Server panel: attach click listener ONCE (event delegation prevents stacking)
+  $('serverRows').addEventListener('click', function(e) {
+    var startBtn = e.target.closest('[data-start]');
+    if (startBtn) { startServer(startBtn.getAttribute('data-start')); return; }
+    var stopBtn = e.target.closest('[data-stop]');
+    if (stopBtn) { stopServer(stopBtn.getAttribute('data-stop')); return; }
   });
 
   function renderQuickLocations(locations) {
@@ -584,6 +739,7 @@
     var btn = $('createBtn');
     btn.textContent = 'Creating...';
     btn.disabled = true;
+    btn.classList.add('creating');
     $('terminal').classList.add('visible');
     $('terminal').textContent = '';
     $('errorBanner').classList.remove('visible');
@@ -603,6 +759,7 @@
       if (data.error) {
         showError(data.error);
         creating = false;
+        btn.classList.remove('creating');
         btn.textContent = 'Create Project';
         validateForm();
       } else {
@@ -611,6 +768,7 @@
     } catch (err) {
       showError(err.message);
       creating = false;
+      btn.classList.remove('creating');
       btn.textContent = 'Create Project';
       validateForm();
     }
@@ -619,6 +777,7 @@
   function onProjectDone(data) {
     creating = false;
     var btn = $('createBtn');
+    btn.classList.remove('creating');
     if (data.code === 0) {
       btn.textContent = 'Done!';
       $('successBanner').textContent = 'Project created at ' + data.projectPath;
@@ -651,6 +810,7 @@
   function showServerPanel() {
     $('serverPanel').classList.add('visible');
     $('urlPanel').classList.add('visible');
+    $('validatePanel').classList.add('visible');
     // Determine which frameworks are included based on preset or custom selection
     var PRESET_HAS_ASTRO = ['full', 'marketing', 'both-frameworks', 'minimal'];
     var PRESET_HAS_NEXT = ['full', 'dashboard', 'both-frameworks', 'nextjs-minimal'];
@@ -666,13 +826,8 @@
       serverStates.next = { status: 'stopped', port: null };
       html += serverRowHTML('next', 'Next.js');
     }
+    // Note: innerHTML is safe here — values are hardcoded ('astro', 'next'), not user input
     $('serverRows').innerHTML = html;
-    $('serverRows').addEventListener('click', function(e) {
-      var startBtn = e.target.closest('[data-start]');
-      if (startBtn) { startServer(startBtn.getAttribute('data-start')); return; }
-      var stopBtn = e.target.closest('[data-stop]');
-      if (stopBtn) { stopServer(stopBtn.getAttribute('data-stop')); return; }
-    });
     renderURLTable();
   }
 
@@ -822,6 +977,180 @@
       tr.appendChild(tdUrl);
       tr.appendChild(tdStatus);
       tbody.appendChild(tr);
+    }
+  }
+
+  // -- Docker Health --
+  function onHealthUpdate(containers) {
+    var panel = $('healthPanel');
+    panel.classList.add('visible');
+    var grid = $('healthGrid');
+    grid.textContent = '';
+
+    // Group by service type for display
+    var supabaseContainers = [];
+    var twentyContainers = [];
+    for (var i = 0; i < containers.length; i++) {
+      if (containers[i].service === 'supabase') supabaseContainers.push(containers[i]);
+      else if (containers[i].service === 'twenty') twentyContainers.push(containers[i]);
+    }
+
+    // Show Supabase as a single aggregate card
+    if (supabaseContainers.length > 0) {
+      var allHealthy = supabaseContainers.every(function(c) { return c.health === 'healthy' || c.health === 'running'; });
+      var anyStarting = supabaseContainers.some(function(c) { return c.health === 'starting' || c.health === 'created'; });
+      var supaHealth = anyStarting ? 'starting' : (allHealthy ? 'healthy' : 'running');
+      var count = supabaseContainers.length;
+      var healthyCount = supabaseContainers.filter(function(c) { return c.health === 'healthy' || c.health === 'running'; }).length;
+      grid.appendChild(makeHealthCard('Supabase', supaHealth, healthyCount + '/' + count + ' containers ready'));
+    }
+
+    // Show Twenty CRM containers individually (there's usually 3: app, db, redis)
+    var twentyApp = null;
+    if (twentyContainers.length > 0) {
+      for (var j = 0; j < twentyContainers.length; j++) {
+        var c = twentyContainers[j];
+        var shortName = c.name.replace(/^twenty-twenty-/, 'Twenty ').replace(/-\d+$/, '');
+        if (!shortName.includes('db') && !shortName.includes('redis')) {
+          shortName = 'Twenty CRM';
+          twentyApp = c;
+        }
+        var statusText = c.health === 'healthy' ? 'Ready' :
+                         c.health === 'starting' ? 'Starting...' :
+                         c.health === 'running' ? 'Running' : c.health;
+        grid.appendChild(makeHealthCard(shortName, c.health, statusText));
+      }
+    }
+    // Show/hide Twenty migration note (always runs, even when containers disappear)
+    var note = $('twentyNote');
+    if (twentyApp && twentyApp.health === 'starting') {
+      note.classList.add('visible');
+    } else {
+      note.classList.remove('visible');
+    }
+  }
+
+  function makeHealthCard(name, health, statusText) {
+    var card = document.createElement('div');
+    card.className = 'health-card ' + health;
+    var indicator = document.createElement('div');
+    indicator.className = 'health-indicator';
+    if (health === 'starting') {
+      var spinner = document.createElement('div');
+      spinner.className = 'health-spinner';
+      indicator.appendChild(spinner);
+    } else {
+      var dot = document.createElement('div');
+      dot.className = 'health-dot ' + health;
+      indicator.appendChild(dot);
+    }
+    var info = document.createElement('div');
+    info.className = 'health-info';
+    var nameEl = document.createElement('div');
+    nameEl.className = 'health-name';
+    nameEl.textContent = name;
+    var statusEl = document.createElement('div');
+    statusEl.className = 'health-status ' + health;
+    statusEl.textContent = statusText;
+    info.appendChild(nameEl);
+    info.appendChild(statusEl);
+    card.appendChild(indicator);
+    card.appendChild(info);
+    return card;
+  }
+
+  // -- Stop All Services --
+  window.stopAllServices = async function() {
+    var btn = $('stopAllBtn');
+    btn.textContent = 'Stopping...';
+    btn.disabled = true;
+    try {
+      await fetch('/api/stop-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectPath: projectPath }),
+      });
+    } catch(e) {}
+  };
+
+  function onAllStopped() {
+    var btn = $('stopAllBtn');
+    btn.textContent = 'All Services Stopped';
+    btn.disabled = true;
+    $('healthPanel').classList.remove('visible');
+    $('serverPanel').classList.remove('visible');
+    $('urlPanel').classList.remove('visible');
+    $('validatePanel').classList.remove('visible');
+    $('twentyNote').classList.remove('visible');
+    // Reset server states
+    for (var key in serverStates) {
+      serverStates[key] = { status: 'stopped', port: null };
+    }
+    // Allow creating another project
+    creating = false;
+    var createBtn = $('createBtn');
+    createBtn.textContent = 'Create Project';
+    validateForm();
+    // Reset stop button after a delay so user can see the message
+    setTimeout(function() {
+      btn.textContent = 'Stop All Services';
+      btn.disabled = false;
+    }, 3000);
+  }
+
+  // -- Validate Project --
+  var validating = false;
+
+  window.validateProject = async function() {
+    if (validating || !projectPath) return;
+    validating = true;
+    var btn = $('validateBtn');
+    btn.textContent = 'Running...';
+    btn.disabled = true;
+    var output = $('validateOutput');
+    output.textContent = '';
+    output.style.display = 'block';
+    $('validateSummary').classList.remove('visible', 'pass', 'fail');
+    try {
+      var res = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectPath: projectPath }),
+      });
+      if (!res.ok) {
+        var err = await res.json().catch(function() { return { error: 'Server error' }; });
+        output.textContent += 'Error: ' + (err.error || res.statusText) + '\n';
+        validating = false;
+        btn.textContent = 'Run Validation';
+        btn.disabled = false;
+      }
+    } catch(e) {
+      output.textContent += 'Error: ' + e.message + '\n';
+      validating = false;
+      btn.textContent = 'Run Validation';
+      btn.disabled = false;
+    }
+  };
+
+  function appendValidateLog(text) {
+    var el = $('validateOutput');
+    el.textContent += text;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function onValidateDone(data) {
+    validating = false;
+    var btn = $('validateBtn');
+    btn.textContent = 'Run Again';
+    btn.disabled = false;
+    var summary = $('validateSummary');
+    summary.classList.add('visible');
+    if (data.code === 0) {
+      summary.classList.add('pass');
+      summary.textContent = 'All checks passed.';
+    } else {
+      summary.classList.add('fail');
+      summary.textContent = 'Some checks failed — see output above.';
     }
   }
 

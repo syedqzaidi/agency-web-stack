@@ -4,132 +4,300 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agency Web Stack — Create Project</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e5e5e5;line-height:1.6}
-    a{color:#60a5fa;text-decoration:none}a:hover{text-decoration:underline}
-    .container{max-width:720px;margin:0 auto;padding:2rem 1.5rem}
-    header{text-align:center;padding:3rem 0 2rem}
-    header h1{font-size:2rem;font-weight:700;color:#fff;letter-spacing:-.02em}
-    header p{color:#888;margin-top:.5rem;font-size:1.05rem}
-    .step{margin-bottom:2.5rem}
-    .step-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:#555;margin-bottom:.5rem}
-    .step h2{font-size:1.15rem;font-weight:600;color:#ccc;margin-bottom:1rem}
-    input[type="text"]{width:100%;padding:.7rem 1rem;background:#161616;border:1px solid #2a2a2a;border-radius:8px;color:#e5e5e5;font-size:1rem;outline:none;transition:border-color .2s}
-    input[type="text"]:focus{border-color:#3b82f6}
-    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem}
-    .card{padding:.85rem 1rem;background:#161616;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer;transition:border-color .2s,background .2s;text-align:center}
-    .card:hover{border-color:#444}.card.active{border-color:#3b82f6;background:#1a1a2e}
-    .card-title{font-weight:600;color:#ddd;font-size:.95rem}.card-desc{font-size:.78rem;color:#777;margin-top:.25rem}
-    .presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.75rem;margin-bottom:1.25rem}
-    .preset{padding:.9rem .75rem;background:#161616;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer;transition:border-color .2s,background .2s}
-    .preset:hover{border-color:#444}.preset.active{border-color:#3b82f6;background:#1a1a2e}
-    .preset-name{font-weight:600;font-size:.9rem;color:#ddd}.preset-desc{font-size:.72rem;color:#777;margin-top:.2rem}
-    .checkboxes{display:none;background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:1rem 1.25rem}
-    .checkboxes.visible{display:block}
-    .cb-group-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:#555;margin:1rem 0 .5rem}.cb-group-title:first-child{margin-top:0}
-    .cb-row{display:flex;align-items:flex-start;gap:.5rem;padding:.35rem 0}
-    .cb-row input[type="checkbox"]{margin-top:.35rem;accent-color:#3b82f6;cursor:pointer}
-    .cb-row label{cursor:pointer;font-size:.9rem;color:#ccc}
-    .cb-row label span{color:#666;font-size:.8rem}
-    .dep-note{font-size:.78rem;color:#f59e0b;margin-top:.5rem;display:none}
-    .dep-note.visible{display:block}
-    .validation{font-size:.82rem;color:#ef4444;margin-top:.5rem;display:none}
-    .validation.visible{display:block}
-    .code-block{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:1rem;overflow-x:auto;font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;font-size:.85rem;color:#a5f3fc;word-break:break-all;white-space:pre-wrap;line-height:1.5}
-    .copy-btn{display:block;width:100%;margin-top:.75rem;padding:.8rem;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s}
-    .copy-btn:hover{background:#2563eb}
-    .steps-list{list-style:none;counter-reset:steps}
-    .steps-list li{counter-increment:steps;padding:.6rem 0;border-bottom:1px solid #1a1a1a;font-size:.92rem;color:#bbb}
-    .steps-list li::before{content:counter(steps) ".";font-weight:700;color:#3b82f6;margin-right:.6rem}
-    .steps-list li:last-child{border-bottom:none}
-    .steps-list kbd{background:#222;padding:.15rem .45rem;border-radius:4px;font-size:.82rem;border:1px solid #333;font-family:inherit}
-    details{background:#111;border:1px solid #1e1e1e;border-radius:8px;margin-top:2rem}
-    details summary{padding:.85rem 1rem;cursor:pointer;color:#999;font-size:.9rem;font-weight:600}
-    details summary:hover{color:#ccc}
-    details[open] summary{border-bottom:1px solid #1e1e1e}
-    details .inner{padding:1rem 1.25rem}
-    details ul{list-style:disc;padding-left:1.25rem}
-    details li{padding:.25rem 0;font-size:.88rem;color:#aaa}
-    footer{text-align:center;padding:2rem 0 3rem;border-top:1px solid #1a1a1a;margin-top:2rem;font-size:.85rem;color:#555}
-    footer a{margin:0 .75rem}
-    .custom-loc{margin-top:.75rem;display:none}.custom-loc.visible{display:block}
-    .url-table{width:100%;border-collapse:collapse;font-size:.88rem}
-    .url-table th{text-align:left;color:#666;font-weight:600;padding:.5rem .75rem;border-bottom:1px solid #222;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
-    .url-table td{padding:.55rem .75rem;border-bottom:1px solid #1a1a1a;color:#bbb}
-    .url-table td:first-child{color:#ddd;font-weight:500}
-    .url-table a{color:#60a5fa;font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:.82rem}
-    .cmd-card{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:.85rem 1rem;margin-bottom:.6rem}
-    .cmd-card-label{font-size:.82rem;color:#888;margin-bottom:.35rem}
-    .cmd-card-code{font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:.88rem;color:#a5f3fc}
-    .cmd-card-note{font-size:.78rem;color:#666;margin-top:.3rem}
-    @media(max-width:500px){.cards,.presets{grid-template-columns:1fr 1fr}header h1{font-size:1.5rem}.container{padding:1.5rem 1rem}}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #09090b; color: #fafafa; line-height: 1.6; padding: 0;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; }
+
+    /* -- Header -- */
+    header { text-align: center; padding: 3rem 0 2rem; animation: fadeSlideIn 300ms ease-out; }
+    header h1 { font-size: 1.75rem; font-weight: 700; color: #fafafa; letter-spacing: -0.02em; }
+    header p { color: #71717a; margin-top: 0.5rem; font-size: 0.95rem; }
+    header::after {
+      content: ''; display: block; width: 80px; height: 2px;
+      background: linear-gradient(to right, #2563eb, #3b82f6);
+      margin: 1.5rem auto 0; border-radius: 1px;
+    }
+
+    /* -- Cards -- */
+    .card {
+      background: #18181b; border: 1px solid #27272a; border-radius: 0.75rem;
+      padding: 1.5rem; margin-bottom: 1.5rem;
+      animation: fadeSlideIn 400ms ease-out backwards;
+    }
+    .card:nth-child(2) { animation-delay: 100ms; }
+    .card:nth-child(3) { animation-delay: 200ms; }
+    .card:nth-child(4) { animation-delay: 300ms; }
+    .card:nth-child(5) { animation-delay: 400ms; }
+    .card:nth-child(6) { animation-delay: 500ms; }
+    .card:nth-child(7) { animation-delay: 600ms; }
+
+    .section-title {
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #a1a1aa; margin-bottom: 1rem;
+    }
+
+    .card-label { display: block; color: #a1a1aa; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.5rem; }
+
+    /* -- Buttons -- */
+    .btn-primary {
+      background: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+      font-weight: 600; border: none; cursor: pointer; transition: background 150ms ease;
+      width: 100%; font-size: 1rem; font-family: inherit;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    .btn-outline {
+      background: transparent; color: #e4e4e7; border: 1px solid #3f3f46;
+      padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500;
+      cursor: pointer; transition: all 150ms ease; font-family: inherit; font-size: 0.85rem;
+    }
+    .btn-outline:hover { background: #27272a; border-color: #52525b; }
+    .btn-outline.active { background: #172554; border-color: #2563eb; color: #93c5fd; }
+
+    /* -- Quick Locations -- */
+    .quick-locations { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* -- Input -- */
+    input[type="text"] {
+      width: 100%; padding: 0.625rem 0.875rem; background: #09090b;
+      border: 1px solid #27272a; border-radius: 0.375rem; color: #fafafa;
+      font-size: 0.875rem; font-family: inherit; outline: none;
+      transition: border-color 150ms ease;
+    }
+    input[type="text"]:focus { border-color: #2563eb; }
+    input[type="text"]::placeholder { color: #52525b; }
+
+    .custom-loc { margin-top: 0.75rem; display: none; }
+    .custom-loc.visible { display: block; }
+
+    .validation { font-size: 0.8rem; color: #ef4444; margin-top: 0.375rem; display: none; }
+    .validation.visible { display: block; }
+
+    /* -- Preset Grid -- */
+    .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; margin-bottom: 1.25rem; }
+    .preset-card {
+      background: #18181b; border: 1px solid #27272a; border-radius: 0.5rem;
+      padding: 1rem; cursor: pointer; transition: all 150ms ease;
+    }
+    .preset-card:hover { border-color: #3f3f46; background: #1f1f23; }
+    .preset-card.active { border-color: #2563eb; background: #172554; }
+    .preset-card .name { font-weight: 600; font-size: 0.875rem; color: #fafafa; }
+    .preset-card .desc { font-size: 0.75rem; color: #71717a; margin-top: 0.25rem; line-height: 1.4; }
+
+    /* -- Services Grid -- */
+    .services-section { display: none; margin-top: 1rem; }
+    .services-section.visible { display: block; }
+    .services-group-title {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #71717a; margin: 1rem 0 0.5rem;
+    }
+    .services-group-title:first-child { margin-top: 0; }
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.5rem; }
+    .service-check {
+      display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.75rem;
+      border: 1px solid #27272a; border-radius: 0.375rem; cursor: pointer;
+      transition: all 150ms ease; background: transparent;
+    }
+    .service-check:hover { border-color: #3f3f46; }
+    .service-check.active { border-color: #2563eb; background: #172554; }
+    .service-check input { display: none; }
+    .service-check .check-icon {
+      width: 16px; height: 16px; border: 1px solid #3f3f46; border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; color: transparent; flex-shrink: 0; margin-top: 1px;
+      transition: all 150ms ease;
+    }
+    .service-check.active .check-icon {
+      background: #2563eb; border-color: #2563eb; color: white;
+    }
+    .service-check .label { font-size: 0.85rem; color: #d4d4d8; }
+    .service-check .label span { display: block; font-size: 0.7rem; color: #71717a; margin-top: 2px; }
+
+    .dep-note {
+      font-size: 0.8rem; color: #fbbf24; margin-top: 0.75rem;
+      padding: 0.625rem 0.875rem; background: #1c1917; border: 1px solid #854d0e;
+      border-radius: 0.375rem; display: none;
+    }
+    .dep-note.visible { display: block; }
+
+    /* -- Terminal / Code Block -- */
+    .code-block {
+      background: #09090b; border: 1px solid #27272a; border-radius: 0.5rem;
+      padding: 1rem; font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace;
+      font-size: 0.8rem; color: #a1a1aa; white-space: pre-wrap; word-break: break-all;
+      line-height: 1.6; overflow-x: auto;
+    }
+
+    /* -- Steps List -- */
+    .steps-list { list-style: none; counter-reset: steps; }
+    .steps-list li {
+      counter-increment: steps; padding: 0.625rem 0;
+      border-bottom: 1px solid #27272a; font-size: 0.875rem; color: #d4d4d8;
+    }
+    .steps-list li::before {
+      content: counter(steps) "."; font-weight: 700; color: #2563eb; margin-right: 0.6rem;
+    }
+    .steps-list li:last-child { border-bottom: none; }
+    .steps-list kbd {
+      background: #27272a; padding: 0.15rem 0.45rem; border-radius: 4px;
+      font-size: 0.8rem; border: 1px solid #3f3f46; font-family: inherit;
+    }
+
+    /* -- Command Cards -- */
+    .cmd-card {
+      background: #09090b; border: 1px solid #27272a; border-radius: 0.5rem;
+      padding: 0.875rem 1rem; margin-bottom: 0.5rem;
+    }
+    .cmd-card-label { font-size: 0.8rem; color: #a1a1aa; margin-bottom: 0.375rem; }
+    .cmd-card-code {
+      font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace;
+      font-size: 0.8rem; color: #60a5fa;
+    }
+    .cmd-card-note { font-size: 0.75rem; color: #71717a; margin-top: 0.375rem; }
+
+    /* -- URL Table -- */
+    .url-table { width: 100%; border-collapse: collapse; }
+    .url-table th {
+      text-align: left; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #71717a; padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #27272a; font-weight: 600;
+    }
+    .url-table td {
+      padding: 0.625rem 0.75rem; border-bottom: 1px solid #1a1a1e;
+      font-size: 0.875rem; color: #d4d4d8;
+    }
+    .url-table td:first-child { font-weight: 500; color: #fafafa; }
+
+    /* -- Details / Prerequisites -- */
+    details {
+      background: #18181b; border: 1px solid #27272a; border-radius: 0.75rem;
+      margin-top: 1.5rem;
+    }
+    details summary {
+      padding: 0.875rem 1rem; cursor: pointer; color: #a1a1aa;
+      font-size: 0.875rem; font-weight: 600;
+    }
+    details summary:hover { color: #d4d4d8; }
+    details[open] summary { border-bottom: 1px solid #27272a; }
+    details .inner { padding: 1rem 1.25rem; }
+    details ul { list-style: disc; padding-left: 1.25rem; }
+    details li { padding: 0.25rem 0; font-size: 0.875rem; color: #a1a1aa; }
+
+    /* -- Tip Banner -- */
+    .tip-banner {
+      background: #172554; border: 1px solid #1e40af; border-radius: 0.5rem;
+      padding: 1rem 1.25rem; margin-bottom: 1.5rem; text-align: center;
+    }
+    .tip-banner p { font-size: 0.85rem; color: #93c5fd; margin-bottom: 0.5rem; }
+    .tip-banner code {
+      display: inline-block; background: #09090b; border: 1px solid #27272a;
+      border-radius: 0.375rem; padding: 0.375rem 0.75rem;
+      font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace;
+      font-size: 0.8rem; color: #60a5fa;
+    }
+
+    /* -- Footer -- */
+    footer { text-align: center; padding: 2rem 0; border-top: 1px solid #27272a; margin-top: 1rem; }
+    footer a { color: #71717a; text-decoration: none; font-size: 0.8rem; margin: 0 0.75rem; transition: color 150ms ease; }
+    footer a:hover { color: #a1a1aa; }
+
+    /* -- Animations -- */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* -- Scrollbar -- */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    /* -- Responsive -- */
+    @media (max-width: 480px) {
+      .container { padding: 0 16px 60px; }
+      header { padding: 2rem 0 1.5rem; }
+      header h1 { font-size: 1.5rem; }
+      .card { padding: 1.25rem; }
+      .preset-grid { grid-template-columns: 1fr; }
+      .services-grid { grid-template-columns: 1fr 1fr; }
+      .quick-locations { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
+
 <div class="container">
   <header>
     <h1>Agency Web Stack</h1>
     <p>Create a new project in seconds</p>
   </header>
 
-  <div class="step">
-    <div class="step-label">Step 1</div>
-    <h2>Project Name</h2>
+  <div class="tip-banner">
+    <p>For the best experience, use our local GUI instead</p>
+    <code>npx create-agency-site</code>
+  </div>
+
+  <!-- 1. Project Name -->
+  <div class="card">
+    <div class="section-title">1. Project Name</div>
+    <label class="card-label" for="projectName">Enter a slug for your project directory</label>
     <input type="text" id="projectName" placeholder="my-project" autocomplete="off" aria-label="Project name">
     <div class="validation" id="nameError">Only lowercase letters, numbers, and hyphens allowed</div>
   </div>
 
-  <div class="step">
-    <div class="step-label">Step 2</div>
-    <h2>Install Location</h2>
-    <div class="cards" id="locationCards">
-      <div class="card active" data-loc="~/Desktop"><div class="card-title">Desktop</div><div class="card-desc">~/Desktop</div></div>
-      <div class="card" data-loc="~/Documents"><div class="card-title">Documents</div><div class="card-desc">~/Documents</div></div>
-      <div class="card" data-loc="custom"><div class="card-title">Custom</div><div class="card-desc">Specify a path</div></div>
+  <!-- 2. Install Location -->
+  <div class="card">
+    <div class="section-title">2. Install Location</div>
+    <div class="quick-locations" id="locationCards">
+      <button class="btn-outline active" data-loc="~/Desktop" type="button">Desktop</button>
+      <button class="btn-outline" data-loc="~/Documents" type="button">Documents</button>
+      <button class="btn-outline" data-loc="custom" type="button">Custom Path</button>
     </div>
     <div class="custom-loc" id="customLoc">
       <input type="text" id="customPath" placeholder="~/Projects/clients" aria-label="Custom install path">
     </div>
   </div>
 
-  <div class="step">
-    <div class="step-label">Step 3</div>
-    <h2>Choose Your Stack</h2>
-    <div class="presets" id="presets">
-      <div class="preset active" data-preset="full"><div class="preset-name">Full Stack</div><div class="preset-desc">Everything included</div></div>
-      <div class="preset" data-preset="marketing"><div class="preset-name">Marketing Site</div><div class="preset-desc">Astro + Supabase + Sentry + PostHog</div></div>
-      <div class="preset" data-preset="dashboard"><div class="preset-name">Dashboard / App</div><div class="preset-desc">Next.js + Payload + Supabase + Sentry</div></div>
-      <div class="preset" data-preset="minimal"><div class="preset-name">Minimal</div><div class="preset-desc">Astro only</div></div>
-      <div class="preset" data-preset="custom"><div class="preset-name">Custom</div><div class="preset-desc">Pick individual tools</div></div>
-    </div>
-    <div class="checkboxes" id="checkboxes">
-      <div class="cb-group-title">Frameworks (at least 1 required)</div>
-      <div class="cb-row"><input type="checkbox" id="cb-astro"><label for="cb-astro">Astro <span>-- SEO and marketing websites</span></label></div>
-      <div class="cb-row"><input type="checkbox" id="cb-nextjs"><label for="cb-nextjs">Next.js <span>-- Dashboards, apps, admin panels</span></label></div>
-      <div class="cb-group-title">Backend</div>
-      <div class="cb-row"><input type="checkbox" id="cb-supabase"><label for="cb-supabase">Supabase <span>-- Database + Auth + Storage</span></label></div>
-      <div class="cb-row"><input type="checkbox" id="cb-payload"><label for="cb-payload">Payload CMS <span>-- Headless content management</span></label></div>
-      <div class="cb-row"><input type="checkbox" id="cb-twenty"><label for="cb-twenty">Twenty CRM <span>-- Customer relationship manager (Docker)</span></label></div>
-      <div class="cb-group-title">Integrations</div>
-      <div class="cb-row"><input type="checkbox" id="cb-sentry"><label for="cb-sentry">Sentry <span>-- Error tracking</span></label></div>
-      <div class="cb-row"><input type="checkbox" id="cb-posthog"><label for="cb-posthog">PostHog <span>-- Product analytics</span></label></div>
-      <div class="cb-row"><input type="checkbox" id="cb-resend"><label for="cb-resend">Resend <span>-- Transactional email</span></label></div>
-      <div class="dep-note" id="depNote">Payload CMS requires Next.js and Supabase -- they have been auto-selected.</div>
+  <!-- 3. Choose Your Stack -->
+  <div class="card">
+    <div class="section-title">3. Choose Your Stack</div>
+    <div class="preset-grid" id="presets"></div>
+    <div class="services-section" id="servicesSection">
+      <div class="services-group-title">Frameworks (at least one required)</div>
+      <div class="services-grid" id="frameworksGrid"></div>
+      <div class="services-group-title">Backend</div>
+      <div class="services-grid" id="backendGrid"></div>
+      <div class="services-group-title">Integrations</div>
+      <div class="services-grid" id="integrationsGrid"></div>
+      <div class="dep-note" id="depNote">Payload CMS requires Next.js and Supabase — they have been auto-selected.</div>
     </div>
     <div class="validation" id="frameworkError">At least one framework must be selected</div>
   </div>
 
-  <div class="step">
-    <div class="step-label">Step 4</div>
-    <h2>Your Command</h2>
+  <!-- 4. Your Command -->
+  <div class="card">
+    <div class="section-title">4. Your Command</div>
     <div class="code-block" id="command"></div>
-    <button class="copy-btn" id="copyBtn" type="button">Copy to Clipboard</button>
+    <button class="btn-primary" id="copyBtn" type="button" style="margin-top: 0.75rem;">Copy to Clipboard</button>
   </div>
 
-  <div class="step">
-    <div class="step-label">Step 5</div>
-    <h2>What Happens Next</h2>
+  <!-- 5. What Happens Next -->
+  <div class="card">
+    <div class="section-title">5. What Happens Next</div>
     <ol class="steps-list">
       <li>Open Terminal (<kbd>Cmd</kbd> + <kbd>Space</kbd>, type "Terminal")</li>
       <li>Paste the command (<kbd>Cmd</kbd> + <kbd>V</kbd>) and press <kbd>Enter</kbd></li>
@@ -138,17 +306,17 @@
     </ol>
   </div>
 
-  <div class="step">
-    <div class="step-label">Step 6</div>
-    <h2>Start Your Dev Servers</h2>
-    <p style="color:#888;font-size:.9rem;margin-bottom:1rem">After setup completes, you need to start the dev servers to see your site. Open a new Terminal window and run:</p>
+  <!-- 6. Dev Server Commands -->
+  <div class="card">
+    <div class="section-title">6. Start Your Dev Servers</div>
+    <p style="color:#71717a;font-size:0.85rem;margin-bottom:1rem;">After setup completes, open a new Terminal window and run:</p>
     <div id="devCommands"></div>
   </div>
 
-  <div class="step">
-    <div class="step-label">Step 7</div>
-    <h2>Your Service URLs</h2>
-    <p style="color:#888;font-size:.9rem;margin-bottom:1rem">These URLs become available after starting your servers. Port numbers are unique to your project — check the terminal output for exact ports.</p>
+  <!-- 7. Service URLs -->
+  <div class="card">
+    <div class="section-title">7. Your Service URLs</div>
+    <p style="color:#71717a;font-size:0.85rem;margin-bottom:1rem;">These URLs become available after starting your servers. Check the terminal output for exact ports.</p>
     <div id="serviceUrls"></div>
   </div>
 
@@ -170,55 +338,176 @@
 </div>
 
 <script>
-const PRESETS = {
-  full: ['astro','nextjs','supabase','payload','twenty','sentry','posthog','resend'],
-  marketing: ['astro','supabase','sentry','posthog'],
-  dashboard: ['nextjs','payload','supabase','sentry'],
-  minimal: ['astro']
+var PRESETS_LIST = [
+  { id: 'full', name: 'Full Stack', desc: 'Everything included — all 8 services' },
+  { id: 'marketing', name: 'Marketing Site', desc: 'Astro + Supabase + Sentry + PostHog' },
+  { id: 'dashboard', name: 'Dashboard / App', desc: 'Next.js + Payload CMS + Supabase + Sentry' },
+  { id: 'both-frameworks', name: 'Both Frameworks', desc: 'Astro + Next.js + Supabase + Sentry' },
+  { id: 'minimal', name: 'Minimal (Astro)', desc: 'Astro only — Tailwind + shadcn, no backend' },
+  { id: 'nextjs-minimal', name: 'Minimal (Next.js)', desc: 'Next.js only — Tailwind + shadcn, no backend' }
+];
+
+var PRESETS = {
+  'full': ['astro','nextjs','supabase','payload','twenty','sentry','posthog','resend'],
+  'marketing': ['astro','supabase','sentry','posthog'],
+  'dashboard': ['nextjs','payload','supabase','sentry'],
+  'both-frameworks': ['astro','nextjs','supabase','sentry'],
+  'minimal': ['astro'],
+  'nextjs-minimal': ['nextjs']
 };
 
-const ALL_SERVICES = ['astro','nextjs','supabase','payload','twenty','sentry','posthog','resend'];
-let activePreset = 'full';
-let activeLocation = '~/Desktop';
+var SERVICES = {
+  frameworks: [
+    { id: 'astro', name: 'Astro', desc: 'SEO & marketing sites' },
+    { id: 'nextjs', name: 'Next.js', desc: 'Dashboards & apps' }
+  ],
+  backend: [
+    { id: 'supabase', name: 'Supabase', desc: 'Database + Auth + Storage' },
+    { id: 'payload', name: 'Payload CMS', desc: 'Headless CMS' },
+    { id: 'twenty', name: 'Twenty CRM', desc: 'CRM (Docker)' }
+  ],
+  integrations: [
+    { id: 'sentry', name: 'Sentry', desc: 'Error tracking' },
+    { id: 'posthog', name: 'PostHog', desc: 'Product analytics' },
+    { id: 'resend', name: 'Resend', desc: 'Transactional email' }
+  ]
+};
+
+var ALL_SERVICES = ['astro','nextjs','supabase','payload','twenty','sentry','posthog','resend'];
+var activePreset = 'full';
+var activeLocation = '~/Desktop';
 
 function $(id) { return document.getElementById(id); }
 function slugify(v) { return v.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); }
 
-// Project name
+// -- Build Preset Grid --
+(function() {
+  var container = $('presets');
+  var frag = document.createDocumentFragment();
+  PRESETS_LIST.forEach(function(p) {
+    var card = document.createElement('div');
+    card.className = 'preset-card' + (p.id === 'full' ? ' active' : '');
+    card.dataset.preset = p.id;
+    var nm = document.createElement('div');
+    nm.className = 'name';
+    nm.textContent = p.name;
+    var desc = document.createElement('div');
+    desc.className = 'desc';
+    desc.textContent = p.desc;
+    card.appendChild(nm);
+    card.appendChild(desc);
+    frag.appendChild(card);
+  });
+  // Custom card
+  var custom = document.createElement('div');
+  custom.className = 'preset-card';
+  custom.dataset.preset = 'custom';
+  var cnm = document.createElement('div');
+  cnm.className = 'name';
+  cnm.textContent = 'Custom';
+  var cdesc = document.createElement('div');
+  cdesc.className = 'desc';
+  cdesc.textContent = 'Pick individual services';
+  custom.appendChild(cnm);
+  custom.appendChild(cdesc);
+  frag.appendChild(custom);
+  container.appendChild(frag);
+})();
+
+// -- Build Services Grid --
+function buildServiceGrid(containerId, list) {
+  var container = $(containerId);
+  var frag = document.createDocumentFragment();
+  list.forEach(function(s) {
+    var el = document.createElement('label');
+    el.className = 'service-check';
+    el.dataset.service = s.id;
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'cb-' + s.id;
+    var icon = document.createElement('span');
+    icon.className = 'check-icon';
+    icon.textContent = '\u2713';
+    var lbl = document.createElement('span');
+    lbl.className = 'label';
+    var nameText = document.createTextNode(s.name);
+    var descSpan = document.createElement('span');
+    descSpan.textContent = s.desc;
+    lbl.appendChild(nameText);
+    lbl.appendChild(descSpan);
+    el.appendChild(cb);
+    el.appendChild(icon);
+    el.appendChild(lbl);
+    frag.appendChild(el);
+  });
+  container.appendChild(frag);
+}
+buildServiceGrid('frameworksGrid', SERVICES.frameworks);
+buildServiceGrid('backendGrid', SERVICES.backend);
+buildServiceGrid('integrationsGrid', SERVICES.integrations);
+
+// -- Sync checkboxes to visual state --
+function syncCheckVisuals() {
+  ALL_SERVICES.forEach(function(s) {
+    var cb = $('cb-' + s);
+    var wrap = cb.closest('.service-check');
+    if (cb.checked) {
+      wrap.classList.add('active');
+    } else {
+      wrap.classList.remove('active');
+    }
+  });
+}
+
+function applyPresetToCheckboxes(name) {
+  var services = PRESETS[name] || [];
+  ALL_SERVICES.forEach(function(s) {
+    $('cb-' + s).checked = services.indexOf(s) !== -1;
+  });
+  syncCheckVisuals();
+}
+
+// Init with full preset
+applyPresetToCheckboxes('full');
+
+// -- Project Name --
 $('projectName').addEventListener('input', function() {
   var s = slugify(this.value);
   if (s !== this.value) this.value = s;
   var valid = s === '' || /^[a-z0-9-]+$/.test(s);
   $('nameError').classList.toggle('visible', !valid);
   generateCommand();
+  updateAfterSetup();
 });
 
-// Location cards
+// -- Location Buttons (event delegation) --
 $('locationCards').addEventListener('click', function(e) {
-  var card = e.target.closest('.card');
-  if (!card) return;
-  this.querySelectorAll('.card').forEach(function(c) { c.classList.remove('active'); });
-  card.classList.add('active');
-  var loc = card.dataset.loc;
+  var btn = e.target.closest('.btn-outline');
+  if (!btn) return;
+  this.querySelectorAll('.btn-outline').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  var loc = btn.dataset.loc;
   activeLocation = loc === 'custom' ? ($('customPath').value || '~/Desktop') : loc;
   $('customLoc').classList.toggle('visible', loc === 'custom');
   generateCommand();
+  updateAfterSetup();
 });
 
 $('customPath').addEventListener('input', function() {
   activeLocation = this.value || '~/Desktop';
   generateCommand();
+  updateAfterSetup();
 });
 
-// Preset cards
+// -- Preset Cards (event delegation) --
 $('presets').addEventListener('click', function(e) {
-  var p = e.target.closest('.preset');
-  if (!p) return;
-  this.querySelectorAll('.preset').forEach(function(c) { c.classList.remove('active'); });
-  p.classList.add('active');
-  activePreset = p.dataset.preset;
+  var card = e.target.closest('.preset-card');
+  if (!card) return;
+  this.querySelectorAll('.preset-card').forEach(function(c) { c.classList.remove('active'); });
+  card.classList.add('active');
+  activePreset = card.dataset.preset;
   var isCustom = activePreset === 'custom';
-  $('checkboxes').classList.toggle('visible', isCustom);
+  $('servicesSection').classList.toggle('visible', isCustom);
 
   if (!isCustom) {
     applyPresetToCheckboxes(activePreset);
@@ -226,36 +515,35 @@ $('presets').addEventListener('click', function(e) {
   $('depNote').classList.remove('visible');
   validateFrameworks();
   generateCommand();
+  updateAfterSetup();
 });
 
-function applyPresetToCheckboxes(name) {
-  var services = PRESETS[name] || [];
-  ALL_SERVICES.forEach(function(s) {
-    $('cb-' + s).checked = services.indexOf(s) !== -1;
-  });
-}
-
-// Init with full preset
-applyPresetToCheckboxes('full');
-
-// Checkbox dependencies
-$('checkboxes').addEventListener('change', function(e) {
-  var id = e.target.id;
-  if (id === 'cb-payload' && e.target.checked) {
-    $('cb-nextjs').checked = true;
-    $('cb-supabase').checked = true;
-    $('depNote').classList.add('visible');
-  }
-  if (id === 'cb-nextjs' && !e.target.checked) {
-    $('cb-payload').checked = false;
-    $('depNote').classList.remove('visible');
-  }
-  if (id === 'cb-supabase' && !e.target.checked) {
-    $('cb-payload').checked = false;
-    $('depNote').classList.remove('visible');
-  }
-  validateFrameworks();
-  generateCommand();
+// -- Service Checkbox Clicks (event delegation) --
+$('servicesSection').addEventListener('click', function(e) {
+  var check = e.target.closest('.service-check');
+  if (!check) return;
+  // Toggle is handled by label/input natively; we just sync visuals after
+  setTimeout(function() {
+    var cb = check.querySelector('input');
+    // Handle Payload dependency
+    if (cb.id === 'cb-payload' && cb.checked) {
+      $('cb-nextjs').checked = true;
+      $('cb-supabase').checked = true;
+      $('depNote').classList.add('visible');
+    }
+    if (cb.id === 'cb-nextjs' && !cb.checked) {
+      $('cb-payload').checked = false;
+      $('depNote').classList.remove('visible');
+    }
+    if (cb.id === 'cb-supabase' && !cb.checked) {
+      $('cb-payload').checked = false;
+      $('depNote').classList.remove('visible');
+    }
+    syncCheckVisuals();
+    validateFrameworks();
+    generateCommand();
+    updateAfterSetup();
+  }, 0);
 });
 
 function validateFrameworks() {
@@ -278,7 +566,6 @@ function findMatchingPreset(services) {
 }
 
 function quotePath(p) {
-  // Wrap in quotes if path contains spaces
   return p.indexOf(' ') !== -1 ? '"' + p + '"' : p;
 }
 
@@ -292,7 +579,7 @@ function generateCommand() {
   $('command').textContent = cmd;
 }
 
-// Copy
+// -- Copy --
 $('copyBtn').addEventListener('click', function() {
   var text = $('command').textContent;
   navigator.clipboard.writeText(text).then(function() {
@@ -303,10 +590,7 @@ $('copyBtn').addEventListener('click', function() {
 });
 
 generateCommand();
-updateAfterSetup();
 
-// Note: innerHTML is safe here — all values are generated from hardcoded strings
-// and slugified user input (no untrusted HTML). This is a static page with no backend.
 function updateAfterSetup() {
   var services = getSelectedServices();
   var name = slugify($('projectName').value) || 'my-project';
@@ -360,21 +644,19 @@ function updateAfterSetup() {
       tbody.appendChild(tr);
     });
     table.appendChild(tbody); urlEl.appendChild(table);
-    var note = document.createElement('p'); note.style.cssText = 'color:#666;font-size:.78rem;margin-top:.75rem';
+    var note = document.createElement('p');
+    note.style.cssText = 'color:#71717a;font-size:0.75rem;margin-top:0.75rem';
     note.textContent = 'Exact port numbers are unique to your project and shown at the end of setup. They are also saved in the .ports file in your project folder.';
     urlEl.appendChild(note);
   } else {
-    var p = document.createElement('p'); p.style.cssText = 'color:#666;font-size:.88rem';
+    var p = document.createElement('p');
+    p.style.cssText = 'color:#71717a;font-size:0.875rem';
     p.textContent = 'No backend services selected — just run your dev server.';
     urlEl.appendChild(p);
   }
 }
 
-$('projectName').addEventListener('input', updateAfterSetup);
-$('locationCards').addEventListener('click', function() { setTimeout(updateAfterSetup, 50); });
-$('customPath').addEventListener('input', updateAfterSetup);
-$('presets').addEventListener('click', function() { setTimeout(updateAfterSetup, 50); });
-$('checkboxes').addEventListener('change', updateAfterSetup);
+updateAfterSetup();
 </script>
 </body>
 </html>

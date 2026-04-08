@@ -8,10 +8,19 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3333;
 
-// Track running processes
+// Track running processes (only process objects: { proc, port })
 const processes = {};
+// Track the created project path separately from processes
+let currentProjectPath = null;
 // Track log clients for SSE
 let logClients = [];
+// Health polling state
+let healthInterval = null;
+let healthTimeout = null;
+let lastHealthSnapshot = '';
+// Guard against concurrent project creation / validation
+let createInProgress = false;
+let validateInProgress = false;
 
 function broadcast(type, data) {
   const msg = `data: ${JSON.stringify({ type, data })}\n\n`;
@@ -24,6 +33,74 @@ function readBody(req) {
     req.on('data', chunk => body += chunk);
     req.on('end', () => resolve(body));
   });
+}
+
+function getDockerHealth() {
+  try {
+    const output = execSync(
+      'docker ps --format "{{.Names}}|{{.Status}}|{{.Ports}}" 2>/dev/null',
+      { encoding: 'utf-8', timeout: 5000 }
+    );
+    const containers = [];
+    for (const line of output.split('\n')) {
+      if (!line.includes('|')) continue;
+      const [name, status, ports] = line.split('|');
+      // Parse health from status like "Up 2 minutes (healthy)" or "(health: starting)"
+      let health = 'unknown';
+      if (status.includes('(healthy)')) health = 'healthy';
+      else if (status.includes('health: starting')) health = 'starting';
+      else if (status.includes('Up')) health = 'running'; // up but no healthcheck
+      else if (status.includes('Created')) health = 'created';
+      else if (status.includes('Exited')) health = 'exited';
+
+      // Classify the service
+      let service = 'other';
+      if (name.includes('supabase_')) service = 'supabase';
+      else if (name.includes('twenty')) service = 'twenty';
+
+      // Extract host port
+      let port = null;
+      const portMatch = (ports || '').match(/0\.0\.0\.0:(\d+)/);
+      if (portMatch) port = parseInt(portMatch[1]);
+
+      containers.push({ name, service, health, port });
+    }
+    return containers;
+  } catch {
+    return [];
+  }
+}
+
+function startHealthPolling() {
+  stopHealthPolling();
+  healthInterval = setInterval(() => {
+    const health = getDockerHealth();
+    const snapshot = JSON.stringify(health);
+    // Only broadcast when something changes
+    if (snapshot !== lastHealthSnapshot) {
+      lastHealthSnapshot = snapshot;
+      broadcast('health', health);
+    }
+    // Stop polling once all containers are healthy or running (no more "starting")
+    // Also stop if Docker returns nothing after 60s (Docker not running)
+    const hasStarting = health.some(c => c.health === 'starting' || c.health === 'created');
+    if (health.length > 0 && !hasStarting) {
+      stopHealthPolling();
+    }
+  }, 5000);
+  // Safety timeout: stop polling after 5 minutes regardless
+  healthTimeout = setTimeout(() => stopHealthPolling(), 300000);
+}
+
+function stopHealthPolling() {
+  if (healthInterval) {
+    clearInterval(healthInterval);
+    healthInterval = null;
+  }
+  if (healthTimeout) {
+    clearTimeout(healthTimeout);
+    healthTimeout = null;
+  }
 }
 
 export function startUI(args) {
@@ -167,7 +244,21 @@ export function startUI(args) {
       const body = await readBody(req);
       const { projectName, location, services, preset } = JSON.parse(body);
 
-      const projectPath = path.join(location, projectName);
+      if (createInProgress) {
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'A project creation is already in progress' }));
+        return;
+      }
+
+      // Sanitize project name server-side (defense in depth)
+      const safeName = projectName.replace(/[^a-z0-9-]/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      if (!safeName) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid project name' }));
+        return;
+      }
+
+      const projectPath = path.join(location, safeName);
 
       if (fs.existsSync(projectPath)) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -175,14 +266,18 @@ export function startUI(args) {
         return;
       }
 
+      createInProgress = true;
       broadcast('status', 'Creating project...');
 
       // Build the flags for create-project.mjs (non-interactive mode)
+      // Allowlist valid preset/service names to prevent injection
+      const VALID_PRESETS = ['full', 'marketing', 'dashboard', 'both-frameworks', 'minimal', 'nextjs-minimal'];
+      const VALID_SERVICES = ['astro', 'nextjs', 'supabase', 'payload', 'twenty', 'sentry', 'posthog', 'resend'];
       let flags = '';
-      if (preset) {
+      if (preset && VALID_PRESETS.includes(preset)) {
         flags = `--preset=${preset}`;
       } else if (services && services.length) {
-        flags = services.map(s => `--${s}`).join(' ');
+        flags = services.filter(s => VALID_SERVICES.includes(s)).map(s => `--${s}`).join(' ');
       }
 
       // Run steps directly instead of bootstrap.sh (no TTY needed):
@@ -190,14 +285,16 @@ export function startUI(args) {
       // 2. Run create-project.mjs with flags (non-interactive)
       // 3. Run init-project.sh
       const REPO = 'https://github.com/syedqzaidi/agency-web-stack.git';
+      // Use safeName everywhere to prevent shell injection and path mismatches
+      const safeLocation = location.replace(/'/g, "'\\''");
       const cmd = [
-        `cd "${location}"`,
-        `git clone --depth=1 ${REPO} "${projectName}"`,
-        `rm -rf "${projectPath}/.git"`,
-        `cd "${projectPath}"`,
+        `cd '${safeLocation}'`,
+        `git clone --depth=1 ${REPO} '${safeName}'`,
+        `rm -rf '${safeName}/.git'`,
+        `cd '${safeName}'`,
         `pnpm install`,
-        `node scripts/create-project.mjs --name="${projectName}" ${flags} --no-install`,
-        `bash scripts/init-project.sh "${projectName}"`,
+        `node scripts/create-project.mjs --name='${safeName}' ${flags} --no-install`,
+        `bash scripts/init-project.sh '${safeName}'`,
       ].join(' && ');
 
       const proc = spawn('bash', ['-c', cmd], {
@@ -206,9 +303,17 @@ export function startUI(args) {
 
       proc.stdout.on('data', d => broadcast('log', d.toString()));
       proc.stderr.on('data', d => broadcast('log', d.toString()));
+      proc.on('error', err => {
+        createInProgress = false;
+        broadcast('log', `Failed to start process: ${err.message}\n`);
+        broadcast('done', { code: 1, projectPath });
+      });
       proc.on('close', code => {
+        createInProgress = false;
         broadcast('done', { code, projectPath });
-        processes.projectPath = projectPath;
+        currentProjectPath = projectPath;
+        // Start polling Docker health after project creation
+        if (code === 0) startHealthPolling();
       });
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -276,16 +381,108 @@ export function startUI(args) {
 
     // API: Get status of running servers
     if (url.pathname === '/api/status') {
-      const status = {};
+      const status = { projectPath: currentProjectPath };
       for (const [key, val] of Object.entries(processes)) {
-        if (key === 'projectPath') {
-          status.projectPath = val;
-          continue;
-        }
         status[key] = { running: true, port: val.port };
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(status));
+      return;
+    }
+
+    // API: Get Docker container health status
+    if (url.pathname === '/api/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(getDockerHealth()));
+      return;
+    }
+
+    // API: Stop all Docker services for the current project
+    if (url.pathname === '/api/stop-all' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { projectPath: projPath } = JSON.parse(body);
+      stopHealthPolling();
+      broadcast('status', 'Stopping all services...');
+
+      // Stop dev servers with SIGKILL fallback
+      for (const [key, val] of Object.entries(processes)) {
+        if (val.proc) {
+          val.proc.kill('SIGTERM');
+          setTimeout(() => {
+            if (processes[key] && processes[key].proc) {
+              processes[key].proc.kill('SIGKILL');
+            }
+          }, 2000);
+        }
+      }
+
+      // Stop Docker services
+      const cmds = [];
+      if (projPath) {
+        cmds.push(`cd "${projPath}" && pnpm supabase stop 2>/dev/null`);
+        const twentyDir = path.join(projPath, 'docker', 'twenty');
+        if (fs.existsSync(path.join(twentyDir, 'docker-compose.yml'))) {
+          cmds.push(`cd "${twentyDir}" && docker compose down 2>/dev/null`);
+        }
+      }
+      if (cmds.length) {
+        const proc = spawn('bash', ['-c', cmds.join(' ; ')], {
+          env: { ...process.env, FORCE_COLOR: '0' },
+        });
+        proc.stdout.on('data', d => broadcast('log', d.toString()));
+        proc.stderr.on('data', d => broadcast('log', d.toString()));
+        proc.on('close', () => {
+          broadcast('all-stopped', {});
+          broadcast('status', 'All services stopped.');
+        });
+      } else {
+        broadcast('all-stopped', {});
+        broadcast('status', 'All services stopped.');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ stopping: true }));
+      return;
+    }
+
+    // API: Validate project (runs validate-template.sh)
+    if (url.pathname === '/api/validate' && req.method === 'POST') {
+      if (validateInProgress) {
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Validation already in progress' }));
+        return;
+      }
+      const body = await readBody(req);
+      const { projectPath: projPath } = JSON.parse(body);
+      if (!projPath || !fs.existsSync(projPath)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid project path' }));
+        return;
+      }
+      const scriptPath = path.join(projPath, 'scripts', 'validate-template.sh');
+      if (!fs.existsSync(scriptPath)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'validate-template.sh not found in project' }));
+        return;
+      }
+      validateInProgress = true;
+      broadcast('status', 'Running validation...');
+      const proc = spawn('bash', [scriptPath], {
+        cwd: projPath,
+        env: { ...process.env, FORCE_COLOR: '0' },
+      });
+      proc.stdout.on('data', d => broadcast('validate-log', d.toString()));
+      proc.stderr.on('data', d => broadcast('validate-log', d.toString()));
+      proc.on('error', err => {
+        validateInProgress = false;
+        broadcast('validate-log', `Failed: ${err.message}\n`);
+        broadcast('validate-done', { code: 1 });
+      });
+      proc.on('close', code => {
+        validateInProgress = false;
+        broadcast('validate-done', { code });
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ started: true }));
       return;
     }
 
@@ -305,8 +502,13 @@ export function startUI(args) {
 
   // Cleanup on exit
   process.on('SIGINT', () => {
+    stopHealthPolling();
+    // Close SSE connections cleanly
+    logClients.forEach(res => { try { res.end(); } catch {} });
+    logClients = [];
+    // Kill all dev server processes
     for (const [key, val] of Object.entries(processes)) {
-      if (key !== 'projectPath' && val.proc) val.proc.kill('SIGKILL');
+      if (val.proc) val.proc.kill('SIGKILL');
     }
     server.close();
     process.exit();
