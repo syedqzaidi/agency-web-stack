@@ -542,8 +542,11 @@
   function showServerPanel() {
     $('serverPanel').classList.add('visible');
     $('urlPanel').classList.add('visible');
-    var showAstro = selectedPreset ? ['marketing', 'blog', 'fullstack'].indexOf(selectedPreset) >= 0 : selectedServices.has('astro');
-    var showNext = selectedPreset ? ['saas', 'fullstack'].indexOf(selectedPreset) >= 0 : selectedServices.has('next');
+    // Determine which frameworks are included based on preset or custom selection
+    var PRESET_HAS_ASTRO = ['full', 'marketing', 'both-frameworks', 'minimal'];
+    var PRESET_HAS_NEXT = ['full', 'dashboard', 'both-frameworks', 'nextjs-minimal'];
+    var showAstro = selectedPreset ? PRESET_HAS_ASTRO.indexOf(selectedPreset) >= 0 : selectedServices.has('astro');
+    var showNext = selectedPreset ? PRESET_HAS_NEXT.indexOf(selectedPreset) >= 0 : selectedServices.has('nextjs');
     serverStates = {};
     var html = '';
     if (showAstro) {
