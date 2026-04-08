@@ -8,7 +8,9 @@
 
 set -euo pipefail
 
-BASE_URL="https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main"
+# Use jsDelivr CDN with version purging — much faster than raw.githubusercontent.com
+# jsDelivr purges within seconds vs GitHub raw's 5-min cache
+BASE_URL="https://cdn.jsdelivr.net/gh/syedqzaidi/agency-web-stack@main"
 
 echo ""
 echo "  Agency Web Stack — Launching GUI..."
