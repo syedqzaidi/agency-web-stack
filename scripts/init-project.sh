@@ -373,16 +373,39 @@ if [[ ! -d "${PROJECT_ROOT}/supabase" ]]; then
   SUPABASE_SKIPPED=true
 else
   SUPABASE_SKIPPED=false
-  # Check if Supabase is already running by attempting `supabase status`
+
+  # Stop any other Supabase projects that might be running and conflicting.
+  # Docker container names include the project_id, so two projects with
+  # different names can't run simultaneously without conflicts.
+  RUNNING_SUPABASE=$(docker ps --format '{{.Names}}' 2>/dev/null | grep '^supabase_' | head -1 || true)
+  if [[ -n "${RUNNING_SUPABASE}" ]]; then
+    # Extract the project name from the container name (supabase_<service>_<project>)
+    RUNNING_PROJECT=$(echo "${RUNNING_SUPABASE}" | sed 's/supabase_[^_]*_//')
+    if [[ "${RUNNING_PROJECT}" != "${PROJECT_NAME}" ]]; then
+      warn "Another Supabase project '${RUNNING_PROJECT}' is running — stopping it first"
+      supabase stop --no-backup 2>/dev/null || docker ps --format '{{.Names}}' | grep '^supabase_' | xargs -r docker stop 2>/dev/null || true
+      sleep 2
+      ok "Previous Supabase project stopped"
+    fi
+  fi
+
+  # Check if THIS project's Supabase is already running
   SUPABASE_ALREADY_RUNNING=false
   if pnpm supabase status &>/dev/null 2>&1; then
-    warn "Supabase appears to already be running — skipping start"
+    warn "Supabase appears to already be running for this project — skipping start"
     SUPABASE_ALREADY_RUNNING=true
   else
     info "Running pnpm supabase start (this may take a minute on first run)…"
     if ! pnpm supabase start; then
-      fail "pnpm supabase start failed. Check Docker is running and ports are free."
-      exit 1
+      warn "Supabase start failed. Attempting to stop conflicting containers and retry..."
+      # Force stop all supabase containers and retry
+      docker ps --format '{{.Names}}' | grep '^supabase_' | xargs -r docker stop 2>/dev/null || true
+      docker ps -a --format '{{.Names}}' | grep '^supabase_' | xargs -r docker rm -f 2>/dev/null || true
+      sleep 3
+      if ! pnpm supabase start; then
+        fail "Supabase start failed after retry. Check Docker is running and ports are free."
+        exit 1
+      fi
     fi
     ok "Supabase started"
   fi
