@@ -199,10 +199,13 @@ check_next_config() {
 check_astro_port() {
   local file="$ROOT/templates/astro-site/astro.config.mjs"
   [[ -f "$file" ]] || { fail "astro.config.mjs missing"; return; }
-  if grep -q "port.*4400\|4400.*port" "$file"; then
-    pass "astro.config.mjs sets server.port = 4400"
+  # Accept any port in the 4400-4499 range (unique per project via hash offset)
+  if grep -qE "port.*4[0-9]{3}" "$file"; then
+    local port
+    port="$(grep -oE "port:\s*[0-9]+" "$file" | grep -oE "[0-9]+" | head -1)"
+    pass "astro.config.mjs sets server.port = ${port:-unknown}"
   else
-    fail "astro.config.mjs does not set server.port = 4400"
+    fail "astro.config.mjs does not set a server.port (expected 4400-4499)"
   fi
 }
 

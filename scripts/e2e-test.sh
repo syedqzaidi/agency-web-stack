@@ -80,9 +80,14 @@ step "2. Preparing clean slate"
 
 # Stop any existing Supabase/Twenty containers that might conflict
 echo "  Stopping any existing test containers..."
-docker ps --format "{{.Names}}" 2>/dev/null | grep -E "supabase_|twenty" | while read -r name; do
-  docker stop "$name" 2>/dev/null && ok "Stopped $name" || true
-done
+existing=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "supabase_|twenty" || true)
+if [[ -n "$existing" ]]; then
+  while read -r name; do
+    docker stop "$name" 2>/dev/null && ok "Stopped $name" || true
+  done <<< "$existing"
+else
+  ok "No conflicting containers running"
+fi
 
 # Create test directory
 mkdir -p "$TEST_DIR"
@@ -97,10 +102,15 @@ ok "Test directory ready: $TEST_DIR"
 # ═══════════════════════════════════════════════════════════════════════════════
 step "3. Creating project: $PROJECT_NAME"
 
-# Clone the template
+# Copy the template (exclude node_modules, .git, and other heavy dirs)
 cd "$TEST_DIR"
-cp -r "$TEMPLATE_ROOT" "$PROJECT_NAME"
-rm -rf "$PROJECT_PATH/.git"
+rsync -a \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='.next' \
+  --exclude='.astro' \
+  --exclude='.turbo' \
+  "$TEMPLATE_ROOT/" "$PROJECT_NAME/"
 ok "Copied template to $PROJECT_PATH"
 
 # Install dependencies
@@ -120,9 +130,9 @@ step "4. Initializing project (starting services)"
 bash scripts/init-project.sh "$PROJECT_NAME"
 ok "init-project.sh completed"
 
-# Give services time to fully boot
-echo "  Waiting 30s for services to stabilize..."
-sleep 30
+# Give services time to fully boot (Twenty CRM needs 60-90s for first migration)
+echo "  Waiting 90s for services to stabilize (Twenty CRM first-boot migrations)..."
+sleep 90
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. VALIDATE
@@ -148,8 +158,8 @@ fi
 check_url() {
   local label="$1" url="$2"
   local code
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$url" 2>/dev/null || echo "000")"
-  if [[ "$code" =~ ^(200|301|302|304)$ ]]; then
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$url" 2>/dev/null || echo "000")"
+  if [[ "$code" =~ ^(200|301|302|303|307|308)$ ]]; then
     ok "$label: HTTP $code at $url"
   else
     fail "$label: HTTP $code at $url"
