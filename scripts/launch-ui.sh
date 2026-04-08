@@ -30,10 +30,11 @@ echo "  OK: Node.js $(node --version)"
 TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 
-# Download UI files
+# Download UI files (cache-bust to avoid GitHub's 5-min CDN cache)
+BUST="$(date +%s)"
 echo "  Downloading UI..."
-curl -fsSL "${BASE_URL}/packages/create-site/ui-server.mjs" -o "${TMPDIR}/ui-server.mjs"
-curl -fsSL "${BASE_URL}/packages/create-site/ui.html" -o "${TMPDIR}/ui.html"
+curl -fsSL "${BASE_URL}/packages/create-site/ui-server.mjs?cb=${BUST}" -o "${TMPDIR}/ui-server.mjs"
+curl -fsSL "${BASE_URL}/packages/create-site/ui.html?cb=${BUST}" -o "${TMPDIR}/ui.html"
 echo "  OK: UI files ready"
 echo ""
 echo "  Opening http://localhost:3333 ..."
