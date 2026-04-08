@@ -6,93 +6,128 @@ Everything you need to build websites for clients. One command to set up, intera
 
 ## Quick Start
 
-There are three ways to get started. **Cloning the repo alone is not enough** -- you must also install dependencies and run the setup wizard for everything to work.
+### Option A -- Visual GUI (recommended)
 
-### Option A -- Clone from GitHub, then set up (most common)
-
-This is what you do if you clicked the green "Code" button on GitHub, or want to clone the repo yourself.
+The easiest way to get started. One command opens a visual interface in your browser where you can pick a folder, name your project, choose your tools, create the project, and start your servers -- all without typing commands.
 
 **Step 1.** Open your Terminal app. On Mac, press `Cmd + Space`, type "Terminal", and press Enter.
 
-**Step 2.** Clone (download) the repo and go into the project folder. Replace `my-project` with your project name:
+**Step 2.** Paste this command and press Enter:
 
 ```bash
-git clone https://github.com/syedqzaidi/agency-web-stack.git my-project
-cd my-project
+bash <(curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/launch-ui.sh)
 ```
 
-**Step 3.** Install all dependencies. This downloads the libraries your project needs. It takes about 30-60 seconds:
+**Step 3.** A browser window opens at `http://localhost:3333`. From there:
+
+1. Browse and select the folder where you want your project saved
+2. Type a name for your project
+3. Pick a preset or choose individual services
+4. Click "Create Project" and watch the live progress
+5. Click "Start Astro" or "Start Next.js" to launch your dev servers
+6. Click the URLs in the table to open your sites
+
+**That's it.** The GUI handles everything -- downloading, installing, configuring, starting services, and showing you the URLs.
+
+**Keep the Terminal window open** while using the GUI. If you close it, the GUI stops. To restart it, run the same command again.
+
+**If port 3333 is already in use** (from a previous session), kill it first:
 
 ```bash
-pnpm install
+lsof -ti:3333 | xargs kill -9
+bash <(curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/launch-ui.sh)
 ```
 
-**Step 4.** Run the interactive setup wizard. This walks you through choosing which tools you want (database, CMS, analytics, etc.):
+---
 
-```bash
-node scripts/create-project.mjs
-```
+### Option B -- One command in Terminal (no GUI)
 
-The wizard will ask you to pick your services using arrow keys and spacebar. When you are done, it removes the tools you do not need and cleans up the project.
+If you prefer the command line, this single command downloads the template, walks you through a text-based wizard, and sets everything up.
 
-**Step 5.** Initialize your services. This generates secure passwords, starts Docker services (database, CRM), and configures everything:
-
-```bash
-./scripts/init-project.sh "my-project"
-```
-
-Replace `"my-project"` with the same name you used in Step 2.
-
-**Step 6.** Start your development servers (see "Starting Your Servers" section below).
-
-**IMPORTANT:** After cloning, your project will NOT work until you complete Steps 3-5. The repo only contains source code and configuration files -- it does not include the installed libraries or running services.
-
-### Option B -- One command does everything (recommended for speed)
-
-If you want to skip the manual steps above, this single command does Steps 1-5 automatically.
-
-First, navigate to the folder where you want the project created. For example, to create it on your Desktop:
+**Step 1.** Navigate to the folder where you want the project. For example:
 
 ```bash
 cd ~/Desktop
 ```
 
-Then run:
+**Step 2.** Run the setup command. Replace `my-project` with your project name:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- my-project
 ```
 
-This creates a new folder called `my-project` inside your current location (in this example, `~/Desktop/my-project`). It then installs dependencies, launches the wizard, generates passwords, and starts all services. Takes about 5 minutes on first run.
+**Step 3.** The wizard asks you to pick services using arrow keys and spacebar. When done, it installs everything and starts your services. Takes about 5 minutes.
 
-### Option C -- One command with a preset (skip the wizard too)
+**Step 4.** Start your dev servers. Open two terminal windows:
 
-If you already know which tools you want, add a preset to skip the wizard entirely:
+```bash
+cd ~/Desktop/my-project
+pnpm dev:astro
+```
+
+```bash
+cd ~/Desktop/my-project
+pnpm dev:next
+```
+
+**Step 5.** Open the URLs printed in the terminal to see your sites.
+
+**To skip the wizard**, add a preset:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/bootstrap.sh | bash -s -- my-project --preset=marketing
 ```
 
-Available presets:
+---
+
+### Option C -- Clone from GitHub manually (step by step)
+
+If you already cloned the repo from the green "Code" button on GitHub:
+
+```bash
+cd my-project
+pnpm install
+node scripts/create-project.mjs
+./scripts/init-project.sh "my-project"
+pnpm dev:astro
+```
+
+**IMPORTANT:** Cloning the repo alone is NOT enough. You must run `pnpm install`, the wizard, and the init script for anything to work.
+
+---
+
+### Available Presets
 
 | Preset | Best For | What You Get |
 |--------|----------|--------------|
+| `full` | Everything included | All 14 tools enabled |
 | `marketing` | SEO and marketing websites | Astro + Supabase + Sentry + PostHog |
 | `dashboard` | Admin panels and web apps | Next.js + Payload CMS + Supabase + Sentry |
-| `full` | Everything included | All 14 tools enabled |
+| `both-frameworks` | Multi-site projects | Both Astro and Next.js with Supabase and Sentry |
 | `minimal` | Simple static website | Just Astro with Tailwind CSS (no backend) |
 | `nextjs-minimal` | Simple Next.js app | Just Next.js with Tailwind CSS (no backend) |
-| `both-frameworks` | Multi-site projects | Both Astro and Next.js with Supabase and Sentry |
 
-### Summary: What each step does and why
+---
 
-| Step | Command | What It Does | Why It Is Needed |
-|------|---------|-------------|-----------------|
-| Clone | `git clone ...` | Downloads the project files to your computer | You need the files before anything else |
-| Install | `pnpm install` | Downloads all the libraries the code depends on | Code will not run without its libraries |
-| Wizard | `node scripts/create-project.mjs` | Lets you pick which tools to include, removes the rest | Customizes the project for your needs |
-| Init | `./scripts/init-project.sh "name"` | Generates passwords, starts database and services | Services need secrets and Docker containers to run |
-| Dev servers | `pnpm dev:astro` / `pnpm dev:next` | Starts the website so you can see it in your browser | Nothing is visible until the server is running |
+### Common Terminal Commands
+
+Use these when you need to manage running services:
+
+| What You Want To Do | Command |
+|---------------------|---------|
+| Launch the GUI | `bash <(curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/launch-ui.sh)` |
+| Kill the GUI if it won't start | `lsof -ti:3333 \| xargs kill -9` |
+| Kill a stuck Astro server | `lsof -ti:PORT \| xargs kill -9` (replace PORT with the number shown in .ports) |
+| Kill a stuck Next.js server | `lsof -ti:PORT \| xargs kill -9` (replace PORT with the number shown in .ports) |
+| Stop Supabase | `pnpm stop:supabase` |
+| Start Supabase | `pnpm dev:supabase` |
+| Stop Twenty CRM | `cd docker/twenty && docker compose down` |
+| Start Twenty CRM | `cd docker/twenty && docker compose up -d` |
+| Kill everything on a port | `lsof -ti:PORT \| xargs kill -9` |
+| See what is using a port | `lsof -i :PORT` |
+| Check your assigned ports | `cat .ports` |
+
+**Tip:** Your project's port numbers are unique and saved in a file called `.ports` in your project folder. Check that file any time you need to find a URL.
 
 ---
 
