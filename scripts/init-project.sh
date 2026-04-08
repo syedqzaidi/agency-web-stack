@@ -487,14 +487,21 @@ fi
 if [[ ! -f "${TWENTY_COMPOSE_FILE}" ]]; then
   warn "No docker-compose.yml / compose.yml found in docker/twenty/ — skipping Twenty CRM start"
 else
-  # Check if Twenty containers are already up
-  if docker compose -f "${TWENTY_COMPOSE_FILE}" ps --services --filter status=running 2>/dev/null | grep -q .; then
-    warn "Twenty CRM containers appear to already be running — skipping start"
+  # Stop and remove any existing Twenty containers from previous projects
+  # to avoid port conflicts and stale containers
+  EXISTING_TWENTY=$(docker ps -a --format '{{.Names}}' 2>/dev/null | grep '^twenty-' | head -1 || true)
+  if [[ -n "${EXISTING_TWENTY}" ]]; then
+    warn "Found existing Twenty CRM containers — stopping them first"
+    docker ps -a --format '{{.Names}}' | grep '^twenty-' | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --format '{{.Names}}' | grep '^twenty-' | xargs -r docker rm -f 2>/dev/null || true
+    sleep 2
+    ok "Old Twenty CRM containers removed"
+  fi
+
+  info "Starting Twenty CRM via docker compose…"
+  if ! docker compose -f "${TWENTY_COMPOSE_FILE}" up -d; then
+    warn "docker compose up for Twenty CRM failed. Check Docker logs. Continuing..."
   else
-    info "Starting Twenty CRM via docker compose…"
-    if ! docker compose -f "${TWENTY_COMPOSE_FILE}" up -d; then
-      warn "docker compose up for Twenty CRM failed. Check Docker logs. Continuing..."
-    fi
     ok "Twenty CRM started (port ${PORT_TWENTY})"
   fi
 fi
