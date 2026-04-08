@@ -18,14 +18,26 @@ The easiest way to get started. One command opens a visual interface in your bro
 bash <(curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/launch-ui.sh)
 ```
 
-**Step 3.** A browser window opens at `http://localhost:3333`. From there:
+**Step 3.** A browser window opens at `http://localhost:3333`. You'll see two options:
 
-1. Browse and select the folder where you want your project saved
-2. Type a name for your project
-3. Pick a preset or choose individual services
-4. Click "Create Project" and watch the live progress
-5. Click "Start Astro" or "Start Next.js" to launch your dev servers
-6. Click the URLs in the table to open your sites
+#### Create a New Project
+
+1. Click **"New Project"** (selected by default)
+2. Browse and select the folder where you want your project saved
+3. Type a name for your project
+4. Pick a preset or choose individual services
+5. Click "Create Project" and watch the live progress
+6. Click "Start Astro" or "Start Next.js" to launch your dev servers
+7. Click the URLs in the table to open your sites
+
+#### Open an Existing Project
+
+1. Click **"Open Existing"**
+2. Browse to your previously created project folder
+3. Click "Select This Project", then "Open Project"
+4. The GUI auto-detects which services are installed (Astro, Next.js, Supabase, etc.)
+5. The dashboard appears with dev server controls, service URLs, health status, and validation
+6. Click "switch project" in the header to go back and open a different project or create a new one
 
 **That's it.** The GUI handles everything -- downloading, installing, configuring, starting services, and showing you the URLs.
 
@@ -115,7 +127,7 @@ Use these when you need to manage running services:
 
 | What You Want To Do | Command |
 |---------------------|---------|
-| Launch the GUI | `bash <(curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/launch-ui.sh)` |
+| Launch the GUI (create or reopen projects) | `bash <(curl -fsSL https://raw.githubusercontent.com/syedqzaidi/agency-web-stack/main/scripts/launch-ui.sh)` |
 | Kill the GUI if it won't start | `lsof -ti:3333 \| xargs kill -9` |
 | Kill a stuck Astro server | `lsof -ti:PORT \| xargs kill -9` (replace PORT with the number shown in .ports) |
 | Kill a stuck Next.js server | `lsof -ti:PORT \| xargs kill -9` (replace PORT with the number shown in .ports) |

@@ -82,6 +82,34 @@
     box-shadow: 0 0 12px rgba(59,130,246,0.4);
   }
 
+  /* ── Mode Selector ── */
+  .mode-selector {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    margin-bottom: 1.5rem; animation: fadeSlideIn 450ms ease-out backwards;
+  }
+  .mode-card {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow), var(--glass-inset);
+    cursor: pointer; transition: all 200ms ease; text-align: center;
+  }
+  .mode-card:hover {
+    background: var(--glass-bg-hover); border-color: var(--glass-border-hover);
+    transform: translateY(-2px);
+  }
+  .mode-card.active {
+    border-color: var(--accent); background: var(--accent-bg);
+    box-shadow: 0 0 30px rgba(59,130,246,0.2), var(--glass-inset);
+  }
+  .mode-card .mode-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .mode-card .mode-title {
+    font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 0.25rem;
+  }
+  .mode-card .mode-desc {
+    font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;
+  }
+
   /* ── Glass Cards ── */
   .card {
     background: var(--glass-bg);
@@ -446,6 +474,7 @@
     .server-row { flex-wrap: wrap; }
     .server-actions { margin-left: 0; width: 100%; margin-top: 0.5rem; }
     .bg-glow .orb { opacity: 0.4; }
+    .mode-selector { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -460,11 +489,25 @@
 <div class="container">
   <header>
     <h1>Agency Web Stack</h1>
-    <p>Create a new project with your preferred stack and services.</p>
+    <p id="headerSubtitle">Create a new project with your preferred stack and services.</p>
   </header>
 
+  <!-- Mode Selector -->
+  <div class="mode-selector" id="modeSelector">
+    <div class="mode-card active" id="modeCreate" onclick="showCreateMode()">
+      <div class="mode-icon">+</div>
+      <div class="mode-title">New Project</div>
+      <div class="mode-desc">Create a new project with your preferred stack and services</div>
+    </div>
+    <div class="mode-card" id="modeOpen" onclick="showOpenMode()">
+      <div class="mode-icon">&#x1F4C2;</div>
+      <div class="mode-title">Open Existing</div>
+      <div class="mode-desc">Reopen a project to manage servers, health, and validation</div>
+    </div>
+  </div>
+
   <!-- 1. Choose Location -->
-  <div class="card">
+  <div class="card" id="cardFolder">
     <div class="section-title">1. Choose Location</div>
     <div class="quick-locations" id="quickLocations"></div>
     <div class="folder-browser">
@@ -478,14 +521,14 @@
   </div>
 
   <!-- 2. Project Name -->
-  <div class="card">
+  <div class="card" id="cardName">
     <div class="section-title">2. Project Name</div>
     <input type="text" id="projectNameInput" placeholder="my-awesome-site" oninput="updateSlug()">
     <div class="slug-preview" id="slugPreview"></div>
   </div>
 
   <!-- 3. Stack & Services -->
-  <div class="card">
+  <div class="card" id="cardStack">
     <div class="section-title">3. Stack &amp; Services</div>
     <span class="card-label">Presets</span>
     <div class="preset-grid" id="presetGrid"></div>
@@ -494,11 +537,19 @@
   </div>
 
   <!-- Create Project -->
-  <div class="card">
+  <div class="card" id="cardCreate">
     <button class="btn-primary" id="createBtn" onclick="createProject()" disabled>Create Project</button>
     <div class="error-banner" id="errorBanner"></div>
     <div class="success-banner" id="successBanner"></div>
     <div class="terminal" id="terminal"></div>
+  </div>
+
+  <!-- Open Existing Project -->
+  <div class="card" id="openActionCard" style="display:none;">
+    <button class="btn-primary" id="openBtn" onclick="openExistingProject()" disabled>Open Project</button>
+    <div class="error-banner" id="openErrorBanner"></div>
+    <div class="success-banner" id="openSuccessBanner"></div>
+    <div id="openWarning" class="health-note" style="display:none;margin-top:0.75rem;"></div>
   </div>
 
   <!-- Docker Health Status -->
@@ -551,6 +602,7 @@
   var projectPath = '';
   var creating = false;
   var serverStates = {};
+  var isOpenMode = false;
 
   var presets = [
     { id: 'full', name: 'Full Stack', desc: 'Everything included — all 8 services' },
@@ -732,7 +784,7 @@
     selectedPath = currentPath;
     $('selectedDisplay').textContent = selectedPath;
     $('selectFolderBtn').classList.add('active');
-    validateForm();
+    if (isOpenMode) validateOpenForm(); else validateForm();
   };
 
   // -- Project Name --
@@ -1205,11 +1257,21 @@
     for (var key in serverStates) {
       serverStates[key] = { status: 'stopped', port: null };
     }
-    // Allow creating another project
-    creating = false;
-    var createBtn = $('createBtn');
-    createBtn.textContent = 'Create Project';
-    validateForm();
+    if (isOpenMode) {
+      // In open mode: restore folder picker so user can reopen or switch
+      $('cardFolder').style.display = '';
+      $('openActionCard').style.display = '';
+      $('openErrorBanner').classList.remove('visible');
+      $('openSuccessBanner').classList.remove('visible');
+      $('openWarning').style.display = 'none';
+      validateOpenForm();
+    } else {
+      // In create mode: allow creating another project
+      creating = false;
+      var createBtn = $('createBtn');
+      createBtn.textContent = 'Create Project';
+      validateForm();
+    }
     // Reset stop button after a delay so user can see the message
     setTimeout(function() {
       btn.textContent = 'Stop All Services';
@@ -1272,6 +1334,178 @@
       summary.textContent = 'Some checks failed — see output above.';
     }
   }
+
+  // -- Open Existing Project Mode --
+  function validateOpenForm() {
+    $('openBtn').disabled = !selectedPath;
+  }
+
+  function updateModeSelector(active) {
+    $('modeCreate').classList.toggle('active', active === 'create');
+    $('modeOpen').classList.toggle('active', active === 'open');
+  }
+
+  window.showOpenMode = function() {
+    isOpenMode = true;
+    updateModeSelector('open');
+    $('modeSelector').style.display = '';
+    $('cardName').style.display = 'none';
+    $('cardStack').style.display = 'none';
+    $('cardCreate').style.display = 'none';
+    $('openActionCard').style.display = '';
+    $('cardFolder').style.display = '';
+    $('cardFolder').querySelector('.section-title').textContent = 'Select Project Folder';
+    $('headerSubtitle').textContent = 'Open an existing project to manage dev servers and services.';
+    $('selectFolderBtn').textContent = 'Select This Project';
+    // Reset folder selection so stale path from a prior visit doesn't auto-enable Open
+    selectedPath = '';
+    $('selectedDisplay').textContent = 'No folder selected';
+    $('selectFolderBtn').classList.remove('active');
+    $('openErrorBanner').classList.remove('visible');
+    $('openSuccessBanner').classList.remove('visible');
+    $('openWarning').style.display = 'none';
+    validateOpenForm();
+  };
+
+  window.showCreateMode = function() {
+    isOpenMode = false;
+    updateModeSelector('create');
+    $('modeSelector').style.display = '';
+    $('cardName').style.display = '';
+    $('cardStack').style.display = '';
+    $('cardCreate').style.display = '';
+    $('openActionCard').style.display = 'none';
+    $('cardFolder').style.display = '';
+    $('cardFolder').querySelector('.section-title').textContent = '1. Choose Location';
+    $('headerSubtitle').textContent = 'Create a new project with your preferred stack and services.';
+    $('selectFolderBtn').textContent = 'Select This Folder';
+    validateForm();
+  };
+
+  window.openExistingProject = async function() {
+    var btn = $('openBtn');
+    btn.disabled = true;
+    btn.textContent = 'Opening...';
+    $('openErrorBanner').classList.remove('visible');
+    $('openSuccessBanner').classList.remove('visible');
+    $('openWarning').style.display = 'none';
+    try {
+      var res = await fetch('/api/open-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectPath: selectedPath }),
+      });
+      var data = await res.json();
+      if (!data.valid) {
+        $('openErrorBanner').textContent = data.error || 'Failed to open project';
+        $('openErrorBanner').classList.add('visible');
+        btn.textContent = 'Open Project';
+        btn.disabled = false;
+        return;
+      }
+      // Success — populate state from detected services
+      projectPath = data.projectPath;
+      projectPorts = data.ports || {};
+      selectedServices = new Set(data.services);
+      selectedPreset = null;
+      if (!data.portsFileExists) {
+        $('openWarning').textContent = 'No .ports file found \u2014 port assignments may be incomplete until services are started.';
+        $('openWarning').style.display = '';
+      }
+      $('openSuccessBanner').textContent = 'Opened ' + data.projectPath + ' \u2014 ' + data.services.length + ' service(s) detected';
+      $('openSuccessBanner').classList.add('visible');
+      // Reset button for next use
+      btn.textContent = 'Open Project';
+      btn.disabled = false;
+      // Hide setup cards, show dashboard
+      $('cardFolder').style.display = 'none';
+      $('openActionCard').style.display = 'none';
+      $('modeSelector').style.display = 'none';
+      $('headerSubtitle').textContent = data.projectPath + ' ';
+      var switchLink = document.createElement('a');
+      switchLink.href = '#';
+      switchLink.textContent = '(switch project)';
+      switchLink.style.cssText = 'color:#60a5fa;font-size:0.85rem;text-decoration:none;';
+      switchLink.onclick = function(e) { e.preventDefault(); switchProject(); };
+      $('headerSubtitle').appendChild(switchLink);
+      showServerPanel();
+      fetchProjectPorts();
+    } catch(err) {
+      $('openErrorBanner').textContent = err.message;
+      $('openErrorBanner').classList.add('visible');
+      btn.textContent = 'Open Project';
+      btn.disabled = false;
+    }
+  };
+
+  window.switchProject = async function() {
+    // Stop any running dev servers
+    for (var key in serverStates) {
+      if (serverStates[key] && serverStates[key].status !== 'stopped') {
+        try {
+          await fetch('/api/stop-server', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ server: key }),
+          });
+        } catch(e) {}
+      }
+    }
+    // Reset state
+    projectPath = '';
+    projectPorts = {};
+    selectedServices = new Set();
+    selectedPreset = null;
+    serverStates = {};
+    isOpenMode = false;
+    selectedPath = '';
+    projectName = '';
+    creating = false;
+    // Hide dashboard panels
+    $('healthPanel').classList.remove('visible');
+    $('serverPanel').classList.remove('visible');
+    $('urlPanel').classList.remove('visible');
+    $('validatePanel').classList.remove('visible');
+    // Show all creation cards
+    $('cardFolder').style.display = '';
+    $('cardName').style.display = '';
+    $('cardStack').style.display = '';
+    $('cardCreate').style.display = '';
+    $('openActionCard').style.display = 'none';
+    // Restore header, mode selector, and labels
+    $('modeSelector').style.display = '';
+    updateModeSelector('create');
+    $('cardFolder').querySelector('.section-title').textContent = '1. Choose Location';
+    $('headerSubtitle').textContent = 'Create a new project with your preferred stack and services.';
+    $('selectFolderBtn').textContent = 'Select This Folder';
+    $('selectFolderBtn').classList.remove('active');
+    $('selectedDisplay').textContent = 'No folder selected';
+    $('projectNameInput').value = '';
+    $('slugPreview').textContent = '';
+    // Reset open button state for next use
+    $('openBtn').textContent = 'Open Project';
+    $('openBtn').disabled = true;
+    $('openErrorBanner').classList.remove('visible');
+    $('openSuccessBanner').classList.remove('visible');
+    $('openWarning').style.display = 'none';
+    // Reset create button state
+    $('createBtn').textContent = 'Create Project';
+    $('createBtn').classList.remove('creating');
+    $('terminal').classList.remove('visible');
+    $('errorBanner').classList.remove('visible');
+    $('successBanner').classList.remove('visible');
+    // Clear stale logs and validation output from previous project
+    $('serverLogs').textContent = '';
+    $('serverLogs').classList.remove('visible');
+    $('validateOutput').textContent = '';
+    $('validateOutput').style.display = 'none';
+    $('validateSummary').textContent = '';
+    $('validateSummary').classList.remove('visible', 'pass', 'fail');
+    // Re-render presets and services
+    renderPresets();
+    renderServices();
+    validateForm();
+  };
 
   // -- Boot --
   init();

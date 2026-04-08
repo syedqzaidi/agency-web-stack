@@ -103,6 +103,20 @@ function stopHealthPolling() {
   }
 }
 
+function detectProjectServices(projectPath) {
+  const checks = [
+    { id: 'astro',    test: () => fs.existsSync(path.join(projectPath, 'templates/astro-site/package.json')) },
+    { id: 'nextjs',   test: () => fs.existsSync(path.join(projectPath, 'templates/next-app/package.json')) },
+    { id: 'supabase', test: () => fs.existsSync(path.join(projectPath, 'supabase')) || fs.existsSync(path.join(projectPath, 'packages/shared/src/supabase')) },
+    { id: 'payload',  test: () => fs.existsSync(path.join(projectPath, 'templates/next-app/src/payload.config.ts')) },
+    { id: 'twenty',   test: () => fs.existsSync(path.join(projectPath, 'docker/twenty')) },
+    { id: 'sentry',   test: () => fs.existsSync(path.join(projectPath, 'packages/shared/src/sentry')) },
+    { id: 'posthog',  test: () => fs.existsSync(path.join(projectPath, 'packages/shared/src/posthog')) },
+    { id: 'resend',   test: () => fs.existsSync(path.join(projectPath, 'packages/shared/src/resend')) },
+  ];
+  return checks.filter(c => { try { return c.test(); } catch { return false; } }).map(c => c.id);
+}
+
 export function startUI(args) {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -483,6 +497,45 @@ export function startUI(args) {
       });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ started: true }));
+      return;
+    }
+
+    // API: Open an existing project (detect services, read ports, start health polling)
+    if (url.pathname === '/api/open-project' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { projectPath: projPath } = JSON.parse(body);
+      if (!projPath || !fs.existsSync(projPath)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ valid: false, error: 'Directory does not exist' }));
+        return;
+      }
+      const scriptPath = path.join(projPath, 'scripts', 'validate-template.sh');
+      if (!fs.existsSync(scriptPath)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ valid: false, error: 'Not a valid AWS project — scripts/validate-template.sh not found' }));
+        return;
+      }
+      const detectedServices = detectProjectServices(projPath);
+      // Read .ports file if present
+      const ports = {};
+      let portsFileExists = false;
+      const portsFile = path.join(projPath, '.ports');
+      try {
+        const content = fs.readFileSync(portsFile, 'utf-8');
+        portsFileExists = true;
+        for (const line of content.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          const [key, val] = trimmed.split('=');
+          if (key && val) ports[key.trim()] = parseInt(val.trim(), 10);
+        }
+      } catch {}
+      currentProjectPath = projPath;
+      if (detectedServices.includes('supabase') || detectedServices.includes('twenty')) {
+        startHealthPolling();
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ valid: true, services: detectedServices, ports, portsFileExists, projectPath: projPath }));
       return;
     }
 
