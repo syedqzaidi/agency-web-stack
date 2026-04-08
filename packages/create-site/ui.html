@@ -5,134 +5,230 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agency Web Stack - Project Creator</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    background: #0a0a0a; color: #e0e0e0; line-height: 1.6; padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #09090b; color: #fafafa; line-height: 1.6; padding: 0;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   }
-  .container { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
-  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
-  .subtitle { color: #888; font-size: 0.95rem; margin-bottom: 40px; }
-  .section { margin-bottom: 32px; }
-  .section-title { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 12px; }
-  label { display: block; color: #ccc; font-size: 0.9rem; margin-bottom: 6px; }
-  input[type="text"] {
-    width: 100%; padding: 10px 14px; background: #161616; border: 1px solid #2a2a2a;
-    border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+
+  .container { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* -- Header -- */
+  header { text-align: center; padding: 3rem 0 2rem; }
+  header h1 { font-size: 1.75rem; font-weight: 700; color: #fafafa; letter-spacing: -0.02em; }
+  header p { color: #71717a; margin-top: 0.5rem; font-size: 0.95rem; }
+  header::after {
+    content: ''; display: block; width: 80px; height: 2px;
+    background: linear-gradient(to right, #2563eb, #3b82f6);
+    margin: 1.5rem auto 0; border-radius: 1px;
   }
-  input[type="text"]:focus { border-color: #3b82f6; }
-  .slug-preview { font-size: 0.8rem; color: #666; margin-top: 4px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px;
-    font-size: 0.9rem; font-weight: 500; border: 1px solid #2a2a2a; background: #161616;
-    color: #ccc; cursor: pointer; transition: all 0.15s;
+
+  /* -- Cards -- */
+  .card {
+    background: #18181b; border: 1px solid #27272a; border-radius: 0.75rem;
+    padding: 1.5rem; margin-bottom: 1.5rem;
   }
-  .btn:hover { background: #222; border-color: #444; color: #fff; }
-  .btn.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+
+  .section-title {
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #a1a1aa; margin-bottom: 1rem;
+  }
+
+  .card-label { display: block; color: #a1a1aa; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.5rem; }
+
+  /* -- Buttons -- */
   .btn-primary {
-    background: #3b82f6; border-color: #3b82f6; color: #fff; font-size: 1rem; padding: 12px 28px;
+    background: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+    font-weight: 600; border: none; cursor: pointer; transition: background 150ms ease;
+    width: 100%; font-size: 1rem; font-family: inherit;
   }
-  .btn-primary:hover { background: #2563eb; }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-danger { border-color: #7f1d1d; color: #fca5a5; }
-  .btn-danger:hover { background: #450a0a; border-color: #991b1b; }
-  .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
-  .quick-locations { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .folder-browser { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-outline {
+    background: transparent; color: #e4e4e7; border: 1px solid #3f3f46;
+    padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500;
+    cursor: pointer; transition: all 150ms ease; font-family: inherit; font-size: 0.85rem;
+  }
+  .btn-outline:hover { background: #27272a; border-color: #52525b; }
+  .btn-outline.active { background: #172554; border-color: #2563eb; color: #93c5fd; }
+
+  .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.8rem; }
+
+  .btn-start { border-color: #166534; color: #4ade80; }
+  .btn-start:hover { background: #052e16; }
+  .btn-stop { border-color: #7f1d1d; color: #f87171; }
+  .btn-stop:hover { background: #450a0a; }
+
+  /* -- Quick Locations -- */
+  .quick-locations { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+  /* -- Folder Browser -- */
+  .folder-browser {
+    background: #09090b; border: 1px solid #27272a; border-radius: 0.5rem; overflow: hidden;
+  }
   .folder-path {
-    display: flex; align-items: center; gap: 6px; padding: 10px 14px;
-    background: #161616; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; color: #999;
-    overflow-x: auto; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px; padding: 0.625rem 0.875rem;
+    background: #18181b; border-bottom: 1px solid #27272a; font-size: 0.8rem;
+    color: #71717a; overflow-x: auto; white-space: nowrap;
   }
-  .folder-path span { cursor: pointer; color: #93c5fd; }
+  .folder-path span { color: #60a5fa; cursor: pointer; }
   .folder-path span:hover { text-decoration: underline; }
-  .folder-list { max-height: 240px; overflow-y: auto; }
+  .folder-list { max-height: 260px; overflow-y: auto; }
   .folder-item {
-    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
-    cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #1a1a1a; transition: background 0.1s;
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.875rem;
+    cursor: pointer; font-size: 0.875rem; color: #d4d4d8;
+    border-bottom: 1px solid #1a1a1e; transition: background 100ms ease;
   }
-  .folder-item:hover { background: #1a1a1a; }
+  .folder-item:hover { background: #1f1f23; }
   .folder-icon { color: #f59e0b; font-size: 1rem; }
   .folder-select-bar {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; background: #161616; border-top: 1px solid #2a2a2a;
+    padding: 0.625rem 0.875rem; background: #18181b; border-top: 1px solid #27272a;
   }
-  .selected-path { font-size: 0.85rem; color: #93c5fd; }
-  .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .selected-path { font-size: 0.85rem; color: #71717a; }
+
+  /* -- Input -- */
+  input[type="text"] {
+    width: 100%; padding: 0.625rem 0.875rem; background: #09090b;
+    border: 1px solid #27272a; border-radius: 0.375rem; color: #fafafa;
+    font-size: 0.875rem; font-family: inherit; outline: none;
+    transition: border-color 150ms ease;
+  }
+  input[type="text"]:focus { border-color: #2563eb; }
+  input[type="text"]::placeholder { color: #52525b; }
+
+  .slug-preview { font-size: 0.8rem; color: #71717a; margin-top: 0.375rem; }
+
+  /* -- Preset Grid -- */
+  .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; margin-bottom: 1.25rem; }
   .preset-card {
-    padding: 12px; background: #161616; border: 1px solid #2a2a2a; border-radius: 8px;
-    cursor: pointer; transition: all 0.15s;
+    background: #18181b; border: 1px solid #27272a; border-radius: 0.5rem;
+    padding: 1rem; cursor: pointer; transition: all 150ms ease;
   }
-  .preset-card:hover { border-color: #444; }
-  .preset-card.active { border-color: #3b82f6; background: #1e3a5f; }
-  .preset-card .name { font-weight: 600; font-size: 0.9rem; color: #fff; }
-  .preset-card .desc { font-size: 0.75rem; color: #888; margin-top: 2px; }
-  .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .preset-card:hover { border-color: #3f3f46; background: #1f1f23; }
+  .preset-card.active { border-color: #2563eb; background: #172554; }
+  .preset-card .name { font-weight: 600; font-size: 0.875rem; color: #fafafa; }
+  .preset-card .desc { font-size: 0.75rem; color: #71717a; margin-top: 0.25rem; line-height: 1.4; }
+
+  /* -- Services Grid -- */
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.5rem; }
   .service-check {
-    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
-    background: #161616; border: 1px solid #2a2a2a; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.75rem;
+    border: 1px solid #27272a; border-radius: 0.375rem; cursor: pointer;
+    transition: all 150ms ease; background: transparent;
   }
-  .service-check:hover { border-color: #444; }
-  .service-check.active { border-color: #3b82f6; background: #1e3a5f; }
+  .service-check:hover { border-color: #3f3f46; }
+  .service-check.active { border-color: #2563eb; background: #172554; }
   .service-check input { display: none; }
-  .service-check .label { font-size: 0.85rem; }
+  .service-check .label { font-size: 0.85rem; color: #d4d4d8; }
+
+  /* -- Terminal -- */
   .terminal {
-    background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.8rem;
-    max-height: 320px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
-    color: #aaa; display: none; margin-top: 16px; line-height: 1.5;
+    background: #09090b; border: 1px solid #27272a; border-radius: 0.5rem;
+    padding: 1rem; font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace;
+    font-size: 0.8rem; color: #a1a1aa; max-height: 300px; overflow-y: auto;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+    display: none; margin-top: 1rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
   }
   .terminal.visible { display: block; }
-  .server-panel {
-    display: none; margin-top: 32px; padding: 20px; background: #111;
-    border: 1px solid #2a2a2a; border-radius: 8px;
-  }
-  .server-panel.visible { display: block; }
-  .server-row {
-    display: flex; align-items: center; gap: 12px; padding: 10px 0;
-    border-bottom: 1px solid #1a1a1a;
-  }
-  .server-row:last-child { border-bottom: none; }
-  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #444; flex-shrink: 0; }
-  .status-dot.starting { background: #eab308; }
-  .status-dot.running { background: #22c55e; }
-  .server-name { font-weight: 600; font-size: 0.9rem; min-width: 80px; }
-  .server-url a { color: #93c5fd; text-decoration: none; font-size: 0.85rem; }
-  .server-url a:hover { text-decoration: underline; }
-  .server-actions { margin-left: auto; display: flex; gap: 8px; }
-  .server-logs {
-    margin-top: 12px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem;
-    background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 6px;
-    padding: 10px; max-height: 180px; overflow-y: auto; color: #888;
-    white-space: pre-wrap; word-break: break-all; display: none;
-  }
-  .server-logs.visible { display: block; }
-  .url-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  .url-table th { text-align: left; font-size: 0.75rem; color: #666; padding: 6px 10px; border-bottom: 1px solid #2a2a2a; }
-  .url-table td { padding: 8px 10px; font-size: 0.85rem; border-bottom: 1px solid #1a1a1a; }
-  .url-table a { color: #93c5fd; text-decoration: none; }
-  .url-table a:hover { text-decoration: underline; }
-  .success-banner {
-    display: none; padding: 16px; background: #052e16; border: 1px solid #166534;
-    border-radius: 8px; margin-top: 16px; color: #86efac; font-size: 0.9rem;
-  }
-  .success-banner.visible { display: block; }
+
+  /* -- Banners -- */
   .error-banner {
-    display: none; padding: 16px; background: #450a0a; border: 1px solid #991b1b;
-    border-radius: 8px; margin-top: 16px; color: #fca5a5; font-size: 0.9rem;
+    background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5;
+    padding: 0.75rem 1rem; border-radius: 0.375rem; font-size: 0.875rem;
+    margin-top: 0.75rem; display: none;
   }
   .error-banner.visible { display: block; }
-  ::-webkit-scrollbar { width: 6px; }
+  .success-banner {
+    background: #052e16; border: 1px solid #166534; color: #86efac;
+    padding: 0.75rem 1rem; border-radius: 0.375rem; font-size: 0.875rem;
+    margin-top: 0.75rem; display: none;
+  }
+  .success-banner.visible { display: block; }
+
+  /* -- Server Panel -- */
+  .server-panel {
+    display: none; background: #18181b; border: 1px solid #27272a;
+    border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .server-panel.visible { display: block; }
+
+  .server-row {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0;
+    border-bottom: 1px solid #27272a;
+  }
+  .server-row:last-child { border-bottom: none; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #3f3f46; flex-shrink: 0; }
+  .status-dot.starting { background: #eab308; }
+  .status-dot.running { background: #22c55e; }
+  .server-name { font-weight: 600; font-size: 0.875rem; min-width: 80px; color: #fafafa; }
+  .server-url a { color: #60a5fa; text-decoration: none; font-size: 0.85rem; }
+  .server-url a:hover { text-decoration: underline; }
+  .server-actions { margin-left: auto; display: flex; gap: 0.5rem; }
+
+  .server-logs {
+    margin-top: 1rem; font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, monospace;
+    font-size: 0.75rem; background: #09090b; border: 1px solid #27272a;
+    border-radius: 0.5rem; padding: 0.75rem; max-height: 180px; overflow-y: auto;
+    color: #71717a; white-space: pre-wrap; word-break: break-all; display: none;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .server-logs.visible { display: block; }
+
+  /* -- URL Table -- */
+  .url-table { width: 100%; border-collapse: collapse; }
+  .url-table th {
+    text-align: left; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #71717a; padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #27272a; font-weight: 600;
+  }
+  .url-table td {
+    padding: 0.625rem 0.75rem; border-bottom: 1px solid #1a1a1e;
+    font-size: 0.875rem; color: #d4d4d8;
+  }
+  .url-table a { color: #60a5fa; text-decoration: none; }
+  .url-table a:hover { text-decoration: underline; }
+
+  /* -- Footer -- */
+  footer { text-align: center; padding: 2rem 0; border-top: 1px solid #27272a; margin-top: 1rem; }
+  footer a { color: #71717a; text-decoration: none; font-size: 0.8rem; transition: color 150ms ease; }
+  footer a:hover { color: #a1a1aa; }
+
+  /* -- Scrollbar -- */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+  /* -- Responsive -- */
+  @media (max-width: 480px) {
+    .container { padding: 0 16px 60px; }
+    header { padding: 2rem 0 1.5rem; }
+    header h1 { font-size: 1.5rem; }
+    .card { padding: 1.25rem; }
+    .preset-grid { grid-template-columns: 1fr; }
+    .services-grid { grid-template-columns: 1fr 1fr; }
+    .server-row { flex-wrap: wrap; }
+    .server-actions { margin-left: 0; width: 100%; margin-top: 0.5rem; }
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>Agency Web Stack</h1>
-  <p class="subtitle">Create a new project with your preferred stack and services.</p>
 
-  <div class="section">
+<div class="container">
+  <header>
+    <h1>Agency Web Stack</h1>
+    <p>Create a new project with your preferred stack and services.</p>
+  </header>
+
+  <!-- 1. Choose Location -->
+  <div class="card">
     <div class="section-title">1. Choose Location</div>
     <div class="quick-locations" id="quickLocations"></div>
     <div class="folder-browser">
@@ -140,38 +236,43 @@
       <div class="folder-list" id="folderList"></div>
       <div class="folder-select-bar">
         <span class="selected-path" id="selectedDisplay">No folder selected</span>
-        <button class="btn btn-sm" id="selectFolderBtn" onclick="selectCurrentFolder()">Select This Folder</button>
+        <button class="btn-outline btn-sm" id="selectFolderBtn" onclick="selectCurrentFolder()">Select This Folder</button>
       </div>
     </div>
   </div>
 
-  <div class="section">
+  <!-- 2. Project Name -->
+  <div class="card">
     <div class="section-title">2. Project Name</div>
     <input type="text" id="projectNameInput" placeholder="my-awesome-site" oninput="updateSlug()">
     <div class="slug-preview" id="slugPreview"></div>
   </div>
 
-  <div class="section">
+  <!-- 3. Stack & Services -->
+  <div class="card">
     <div class="section-title">3. Stack &amp; Services</div>
-    <label>Presets</label>
+    <span class="card-label">Presets</span>
     <div class="preset-grid" id="presetGrid"></div>
-    <label>Or pick individual services</label>
+    <span class="card-label">Or pick individual services</span>
     <div class="services-grid" id="servicesGrid"></div>
   </div>
 
-  <div class="section">
-    <button class="btn btn-primary" id="createBtn" onclick="createProject()" disabled>Create Project</button>
+  <!-- Create Project -->
+  <div class="card">
+    <button class="btn-primary" id="createBtn" onclick="createProject()" disabled>Create Project</button>
     <div class="error-banner" id="errorBanner"></div>
     <div class="success-banner" id="successBanner"></div>
     <div class="terminal" id="terminal"></div>
   </div>
 
+  <!-- Dev Servers -->
   <div class="server-panel" id="serverPanel">
     <div class="section-title">Dev Servers</div>
     <div id="serverRows"></div>
     <div class="server-logs" id="serverLogs"></div>
   </div>
 
+  <!-- Service URLs -->
   <div class="server-panel" id="urlPanel">
     <div class="section-title">Service URLs</div>
     <table class="url-table">
@@ -179,6 +280,10 @@
       <tbody id="urlTableBody"></tbody>
     </table>
   </div>
+
+  <footer>
+    <a href="https://github.com" target="_blank">GitHub</a>
+  </footer>
 </div>
 
 <script>
@@ -279,7 +384,7 @@
     el.textContent = '';
     for (var i = 0; i < locations.length; i++) {
       var btn = document.createElement('button');
-      btn.className = 'btn btn-sm';
+      btn.className = 'btn-outline btn-sm';
       btn.setAttribute('data-path', locations[i].path);
       btn.textContent = locations[i].name;
       el.appendChild(btn);
@@ -343,7 +448,7 @@
     }
     if (!data.folders.length && data.current === data.parent) {
       var empty = document.createElement('div');
-      empty.style.cssText = 'padding:14px;color:#666;font-size:0.85rem;';
+      empty.style.cssText = 'padding:14px;color:#52525b;font-size:0.85rem;';
       empty.textContent = 'No subfolders';
       el.appendChild(empty);
     }
@@ -416,7 +521,7 @@
       if (s.group && s.group !== lastGroup) {
         lastGroup = s.group;
         var groupLabel = document.createElement('div');
-        groupLabel.style.cssText = 'font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#555;padding:10px 0 4px 0;grid-column:1/-1;';
+        groupLabel.style.cssText = 'font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#52525b;padding:10px 0 4px 0;grid-column:1/-1;';
         if (i > 0) groupLabel.style.marginTop = '8px';
         groupLabel.textContent = s.group;
         el.appendChild(groupLabel);
@@ -435,7 +540,7 @@
       div.appendChild(label);
       if (s.desc) {
         var desc = document.createElement('div');
-        desc.style.cssText = 'font-size:0.72rem;color:#666;margin-top:2px;grid-column:1/-1;padding-left:22px;';
+        desc.style.cssText = 'font-size:0.72rem;color:#52525b;margin-top:2px;grid-column:1/-1;padding-left:22px;';
         desc.textContent = s.desc;
         div.appendChild(desc);
       }
@@ -577,8 +682,8 @@
       + '<div class="server-name">' + esc(name) + '</div>'
       + '<div class="server-url" id="url-' + id + '"></div>'
       + '<div class="server-actions">'
-      + '<button class="btn btn-sm" id="startBtn-' + id + '" data-start="' + id + '">Start</button>'
-      + '<button class="btn btn-sm btn-danger" id="stopBtn-' + id + '" data-stop="' + id + '" style="display:none">Stop</button>'
+      + '<button class="btn-outline btn-sm btn-start" id="startBtn-' + id + '" data-start="' + id + '">Start</button>'
+      + '<button class="btn-outline btn-sm btn-stop" id="stopBtn-' + id + '" data-stop="' + id + '" style="display:none">Stop</button>'
       + '</div></div>';
   }
 
@@ -702,15 +807,15 @@
           a.textContent = url;
           tdUrl.appendChild(a);
         } else {
-          tdUrl.style.color = '#666';
+          tdUrl.style.color = '#52525b';
           tdUrl.textContent = url;
         }
       } else {
-        tdUrl.style.color = '#666';
+        tdUrl.style.color = '#52525b';
         tdUrl.textContent = 'Port not yet assigned';
       }
       var dot = document.createElement('span');
-      dot.style.color = running ? '#22c55e' : (port && !svc.server ? '#22c55e' : '#444');
+      dot.style.color = running ? '#22c55e' : (port && !svc.server ? '#22c55e' : '#3f3f46');
       dot.textContent = '\u25CF';
       tdStatus.appendChild(dot);
       tr.appendChild(tdName);
