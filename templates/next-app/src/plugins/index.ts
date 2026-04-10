@@ -11,9 +11,12 @@ import * as Sentry from '@sentry/nextjs'
 import { stripePlugin } from '@payloadcms/plugin-stripe'
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { payloadAiPlugin } from '@ai-stack/payloadcms'
-import { betterLocalizedFields } from '@payload-enchants/better-localized-fields'
-import { docsReorder } from '@payload-enchants/docs-reorder'
-import { buildCachedPayload } from '@payload-enchants/cached-local-api'
+// NOTE: @payload-enchants packages (v1.2.2) are incompatible with Payload 3.82.x
+// They import removed exports from @payloadcms/ui (useListInfo, useFieldProps).
+// Re-enable when upstream releases compatible versions.
+// import { betterLocalizedFields } from '@payload-enchants/better-localized-fields'
+// import { docsReorder } from '@payload-enchants/docs-reorder'
+// import { buildCachedPayload } from '@payload-enchants/cached-local-api'
 import type { Plugin } from 'payload'
 
 export function getPlugins(): Plugin[] {
@@ -159,18 +162,18 @@ export function getPlugins(): Plugin[] {
     )
   }
 
-  // Enchants plugins — added last so cachedLocalApi wraps all operations above it
-  const { cachedPayloadPlugin } = buildCachedPayload({
-    collections: [{ slug: 'pages' }, { slug: 'media' }, { slug: 'users' }],
-    revalidateTag: () => {},
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    unstable_cache: (cb: any) => cb,
-  })
-  plugins.push(
-    betterLocalizedFields(),
-    docsReorder({ collections: [{ slug: 'pages' }] }),
-    cachedPayloadPlugin,
-  )
+  // Enchants plugins — disabled due to Payload 3.82.x incompatibility.
+  // Re-enable when @payload-enchants releases compatible versions.
+  // const { cachedPayloadPlugin } = buildCachedPayload({
+  //   collections: [{ slug: 'pages' }, { slug: 'media' }, { slug: 'users' }],
+  //   revalidateTag: () => {},
+  //   unstable_cache: (cb: any) => cb,
+  // })
+  // plugins.push(
+  //   betterLocalizedFields(),
+  //   docsReorder({ collections: [{ slug: 'pages' }] }),
+  //   cachedPayloadPlugin,
+  // )
 
   // Sentry plugin — unshifted to be first in array so it wraps all other operations
   plugins.unshift(
