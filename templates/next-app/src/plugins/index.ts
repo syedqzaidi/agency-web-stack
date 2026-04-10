@@ -2,7 +2,7 @@ import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
-import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
+import { formBuilderPlugin, getPaymentTotal } from '@payloadcms/plugin-form-builder'
 import { importExportPlugin } from '@payloadcms/plugin-import-export'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
@@ -118,16 +118,75 @@ export function getPlugins(): Plugin[] {
 
   plugins.push(
     formBuilderPlugin({
+      // All 12 field types enabled
       fields: {
         text: true,
         textarea: true,
         select: true,
+        radio: true,
         email: true,
-        number: true,
+        state: true,
+        country: true,
         checkbox: true,
+        number: true,
         message: true,
+        date: true,
+        payment: true,
       },
       redirectRelationships: ['pages'],
+
+      // Wrap emails in a branded HTML template before sending
+      beforeEmail: (emailsToSend) => {
+        const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Site Name'
+        return emailsToSend.map((email) => ({
+          ...email,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 24px;">
+                <h2 style="margin: 0; color: #111827;">${siteName}</h2>
+              </div>
+              <div style="color: #374151; line-height: 1.6;">
+                ${email.html}
+              </div>
+              <div style="border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 32px; font-size: 12px; color: #9ca3af;">
+                This email was sent from ${siteName}. Please do not reply directly to this email.
+              </div>
+            </div>
+          `,
+        }))
+      },
+
+      // Process payments via Stripe when a payment field is submitted
+      handlePayment: process.env.STRIPE_SECRET_KEY
+        ? async ({ form, submissionData }) => {
+            const paymentField = (form.fields as any[])?.find(
+              (field) => field.blockType === 'payment',
+            )
+            if (!paymentField) return
+
+            const price = getPaymentTotal({
+              basePrice: paymentField.basePrice,
+              priceConditions: paymentField.priceConditions,
+              fieldValues: submissionData,
+            })
+
+            // Import Stripe dynamically to avoid requiring it when not configured
+            const Stripe = (await import('stripe')).default
+            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+              apiVersion: '2022-08-01',
+            })
+
+            await stripe.paymentIntents.create({
+              amount: Math.round(price * 100), // Stripe expects cents
+              currency: 'usd',
+              metadata: {
+                formId: typeof form.id === 'string' ? form.id : String(form.id),
+                formTitle: (form as any).title || '',
+              },
+            })
+          }
+        : undefined,
+
       formOverrides: {
         admin: { group: 'Forms' },
       },

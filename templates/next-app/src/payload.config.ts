@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { resendAdapter } from '@payloadcms/email-resend'
 import { Pages, Media, Users } from './collections'
 import { getPlugins } from './plugins'
 
@@ -46,6 +47,14 @@ export default buildConfig({
   collections: [Pages, Media, Users],
   plugins: getPlugins(),
   editor: lexicalEditor(),
+  // Email via Resend — required for form builder emails and auth (password reset, etc.)
+  ...(process.env.RESEND_API_KEY && {
+    email: resendAdapter({
+      defaultFromAddress: process.env.EMAIL_FROM_ADDRESS || 'noreply@example.com',
+      defaultFromName: process.env.NEXT_PUBLIC_SITE_NAME || 'Site Name',
+      apiKey: process.env.RESEND_API_KEY,
+    }),
+  }),
   secret: process.env.PAYLOAD_SECRET || (process.env.NODE_ENV === 'production'
     ? (() => { throw new Error('PAYLOAD_SECRET is required in production') })()
     : 'dev-secret-do-not-use-in-production'),

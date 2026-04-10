@@ -16,6 +16,7 @@
     "@payload-enchants/cached-local-api": "^1.2.2",
     "@payload-enchants/docs-reorder": "^1.2.2",
     "@payloadcms/db-postgres": "^3.82.1",
+    "@payloadcms/email-resend": "^3.82.1",
     "@payloadcms/next": "^3.82.1",
     "@payloadcms/plugin-form-builder": "^3.82.1",
     "@payloadcms/plugin-import-export": "^3.82.1",
