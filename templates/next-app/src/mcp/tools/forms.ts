@@ -17,9 +17,13 @@ export const formsTools = [
 
       // Fetch all forms
       let forms: Array<Record<string, unknown>> = []
+      let formsWarning = ''
       try {
         const formsResult = await req.payload.find({ collection: 'forms', limit: 100 })
         forms = formsResult.docs as Array<Record<string, unknown>>
+        if (formsResult.totalDocs > formsResult.docs.length) {
+          formsWarning = `\nWarning: ${formsResult.totalDocs} total forms, showing first ${formsResult.docs.length}.`
+        }
       } catch (err) {
         return text(
           `Error fetching forms: ${err instanceof Error ? err.message : String(err)}`,
@@ -60,7 +64,7 @@ export const formsTools = [
         }
       }
 
-      return text(JSON.stringify(stats, null, 2))
+      return text(JSON.stringify(stats, null, 2) + formsWarning)
     },
   },
   {

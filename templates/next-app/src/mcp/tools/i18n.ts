@@ -13,6 +13,7 @@ export const i18nTools = [
     handler: async (_args: Record<string, unknown>, req: PayloadRequest, _extra: unknown) => {
       try {
         const report: Record<string, { total: number; translated: number }> = {}
+        const warnings: string[] = []
 
         for (const loc of LOCALES) {
           const result = await req.payload.find({
@@ -21,6 +22,10 @@ export const i18nTools = [
             where: { _status: { equals: 'published' } },
             limit: 1000,
           })
+
+          if (result.totalDocs > result.docs.length) {
+            warnings.push(`Warning (${loc}): ${result.totalDocs} total pages, showing first ${result.docs.length}.`)
+          }
 
           const total = result.docs.length
           const translated = result.docs.filter((page: Record<string, unknown>) => {
@@ -31,7 +36,8 @@ export const i18nTools = [
           report[loc] = { total, translated }
         }
 
-        return text(JSON.stringify(report, null, 2))
+        const warningStr = warnings.length > 0 ? '\n' + warnings.join('\n') : ''
+        return text(JSON.stringify(report, null, 2) + warningStr)
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err)
         return text(`Error: ${message}`)

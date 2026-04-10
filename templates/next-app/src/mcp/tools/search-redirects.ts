@@ -115,7 +115,6 @@ export const searchRedirectsTools = [
       const to = args.to as string
       const type = (args.type as string | undefined) ?? '301'
 
-      // Fix #4: Basic URL validation
       if (!from.startsWith('/')) {
         return text(JSON.stringify({ success: false, error: '`from` must start with a `/`' }, null, 2))
       }
@@ -123,20 +122,24 @@ export const searchRedirectsTools = [
         return text(JSON.stringify({ success: false, error: '`to` must be non-empty' }, null, 2))
       }
 
-      // Fix #3: Pass `type` to the redirect document
-      const redirect = await req.payload.create({
-        collection: 'redirects',
-        data: {
-          from,
-          to: {
-            type: 'custom',
-            url: to,
+      try {
+        const redirect = await req.payload.create({
+          collection: 'redirects',
+          data: {
+            from,
+            to: {
+              type: 'custom',
+              url: to,
+            },
+            type,
           },
-          type,
-        },
-      })
+        })
 
-      return text(JSON.stringify({ success: true, id: redirect.id, from, to, type }, null, 2))
+        return text(JSON.stringify({ success: true, id: redirect.id, from, to, type }, null, 2))
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        return text(JSON.stringify({ success: false, error: message }, null, 2))
+      }
     },
   },
   {

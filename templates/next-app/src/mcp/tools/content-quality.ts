@@ -117,26 +117,34 @@ export const contentQualityTools = [
     description: 'Find published pages with word count below a threshold (default 300).',
     parameters: { minWords: z.number().optional() },
     handler: async (args: Record<string, unknown>, req: PayloadRequest, _extra: unknown) => {
-      const minWords = (args.minWords as number | undefined) ?? 300
-      const result = await req.payload.find({
-        collection: 'pages',
-        where: { _status: { equals: 'published' } },
-        limit: 500,
-        depth: 0,
-      })
-      const pages = result.docs as Record<string, unknown>[]
+      try {
+        const minWords = (args.minWords as number | undefined) ?? 300
+        const result = await req.payload.find({
+          collection: 'pages',
+          where: { _status: { equals: 'published' } },
+          limit: 500,
+          depth: 0,
+        })
+        const pages = result.docs as Record<string, unknown>[]
+        const warning = result.totalDocs > result.docs.length
+          ? `\nWarning: ${result.totalDocs} total items, showing first ${result.docs.length}.`
+          : ''
 
-      const thin = pages
-        .map((page) => ({
-          id: page.id,
-          title: page.title,
-          slug: page.slug,
-          wordCount: estimateWordCount(page.content),
-        }))
-        .filter((page) => page.wordCount < minWords)
-        .sort((a, b) => a.wordCount - b.wordCount)
+        const thin = pages
+          .map((page) => ({
+            id: page.id,
+            title: page.title,
+            slug: page.slug,
+            wordCount: estimateWordCount(page.content),
+          }))
+          .filter((page) => page.wordCount < minWords)
+          .sort((a, b) => a.wordCount - b.wordCount)
 
-      return text(JSON.stringify(thin, null, 2))
+        return text(JSON.stringify(thin, null, 2) + warning)
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        return text(`Error: ${message}`)
+      }
     },
   },
   {
@@ -144,48 +152,53 @@ export const contentQualityTools = [
     description: 'Check all URLs found in a page\'s content for broken links (4xx/5xx responses).',
     parameters: { id: z.string() },
     handler: async (args: Record<string, unknown>, req: PayloadRequest, _extra: unknown) => {
-      const id = args.id as string
-      const page = await req.payload.findByID({ collection: 'pages', id }) as Record<string, unknown>
-      const contentStr = JSON.stringify(page.content ?? '')
-      const urlRegex = /https?:\/\/[^\s"'<>]+/g
-      const allUrls = contentStr.match(urlRegex) ?? []
-      const uniqueUrls = [...new Set(allUrls)].slice(0, 20)
+      try {
+        const id = args.id as string
+        const page = await req.payload.findByID({ collection: 'pages', id }) as Record<string, unknown>
+        const contentStr = JSON.stringify(page.content ?? '')
+        const urlRegex = /https?:\/\/[^\s"'<>]+/g
+        const allUrls = contentStr.match(urlRegex) ?? []
+        const uniqueUrls = [...new Set(allUrls)].slice(0, 20)
 
-      const fetchOne = async (url: string): Promise<{ url: string; status: number | string; broken: boolean }> => {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 5000)
-        try {
-          const response = await fetch(url, {
-            method: 'HEAD',
-            signal: controller.signal,
-            redirect: 'follow',
-          })
-          clearTimeout(timeout)
-          return { url, status: response.status, broken: response.status >= 400 }
-        } catch {
-          clearTimeout(timeout)
-          return { url, status: controller.signal.aborted ? 'timeout' : 'error', broken: true }
+        const fetchOne = async (url: string): Promise<{ url: string; status: number | string; broken: boolean }> => {
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 5000)
+          try {
+            const response = await fetch(url, {
+              method: 'HEAD',
+              signal: controller.signal,
+              redirect: 'follow',
+            })
+            clearTimeout(timeout)
+            return { url, status: response.status, broken: response.status >= 400 }
+          } catch {
+            clearTimeout(timeout)
+            return { url, status: controller.signal.aborted ? 'timeout' : 'error', broken: true }
+          }
         }
+
+        const settled = await Promise.allSettled(uniqueUrls.map(fetchOne))
+        const results = settled.map((outcome) =>
+          outcome.status === 'fulfilled'
+            ? outcome.value
+            : { url: '', status: 'error', broken: true },
+        )
+
+        const broken = results.filter((r) => r.broken)
+        const report = {
+          pageId: id,
+          title: page.title,
+          totalLinksChecked: results.length,
+          brokenCount: broken.length,
+          brokenLinks: broken,
+          allResults: results,
+        }
+
+        return text(JSON.stringify(report, null, 2))
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        return text(`Error: ${message}`)
       }
-
-      const settled = await Promise.allSettled(uniqueUrls.map(fetchOne))
-      const results = settled.map((outcome) =>
-        outcome.status === 'fulfilled'
-          ? outcome.value
-          : { url: '', status: 'error', broken: true },
-      )
-
-      const broken = results.filter((r) => r.broken)
-      const report = {
-        pageId: id,
-        title: page.title,
-        totalLinksChecked: results.length,
-        brokenCount: broken.length,
-        brokenLinks: broken,
-        allResults: results,
-      }
-
-      return text(JSON.stringify(report, null, 2))
     },
   },
   {
