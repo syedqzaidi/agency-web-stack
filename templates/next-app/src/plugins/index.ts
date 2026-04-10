@@ -36,12 +36,62 @@ export function getPlugins(): Plugin[] {
       collections: ['pages'],
       uploadsCollection: 'media',
       tabbedUI: true,
+
       generateTitle: ({ doc }) =>
-        `${doc.title as string} | ${process.env.NEXT_PUBLIC_SITE_NAME || 'Site Name'}`,
-      generateDescription: ({ doc }) =>
-        (doc.title as string) || '',
-      generateURL: ({ doc }) =>
-        `${process.env.NEXT_PUBLIC_SERVER_URL || ''}/${(doc as any).slug || ''}`,
+        `${(doc as any)?.title || ''} | ${process.env.NEXT_PUBLIC_SITE_NAME || 'Site Name'}`,
+
+      // Use excerpt if available, otherwise fall back to title
+      generateDescription: ({ doc }) => {
+        const d = doc as any
+        return d?.excerpt || d?.title || ''
+      },
+
+      // Locale-aware canonical URL
+      generateURL: ({ doc, locale }) => {
+        const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || ''
+        const slug = (doc as any)?.slug || ''
+        const localePrefix = locale && locale !== 'en' ? `/${locale}` : ''
+        return `${baseUrl}${localePrefix}/${slug}`
+      },
+
+      // Auto-populate OG image from the page's featured image
+      generateImage: ({ doc }) => (doc as any)?.featuredImage,
+
+      // Extend default meta fields with robots, OG title, and JSON-LD
+      fields: ({ defaultFields }) => [
+        ...defaultFields,
+        {
+          name: 'ogTitle',
+          type: 'text',
+          label: 'OG Title (Social)',
+          admin: {
+            description: 'Override the title shown on social cards. Falls back to meta title if empty.',
+          },
+        },
+        {
+          name: 'robots',
+          type: 'select',
+          label: 'Robots',
+          defaultValue: 'index, follow',
+          options: [
+            { label: 'Index, Follow (default)', value: 'index, follow' },
+            { label: 'No Index, Follow', value: 'noindex, follow' },
+            { label: 'Index, No Follow', value: 'index, nofollow' },
+            { label: 'No Index, No Follow', value: 'noindex, nofollow' },
+          ],
+          admin: {
+            description: 'Control how search engines index and follow links on this page.',
+          },
+        },
+        {
+          name: 'jsonLd',
+          type: 'json',
+          label: 'JSON-LD Schema',
+          admin: {
+            description: 'Structured data (schema.org) for rich search results. Paste valid JSON-LD.',
+          },
+        },
+      ],
     }),
   )
 
@@ -179,7 +229,7 @@ export function getPlugins(): Plugin[] {
           enabledLanguages: ['en-US', 'es', 'fr'],
         },
 
-        // Auto-populate AI prompts for SEO meta fields
+        // Auto-populate AI prompts for SEO and content fields
         seedPrompts: ({ path }) => {
           if (path.endsWith('.meta.title')) {
             return {
@@ -193,11 +243,29 @@ export function getPlugins(): Plugin[] {
             return {
               data: {
                 prompt:
-                  'Generate an SEO meta description (150-160 chars) summarizing this page. Title: {{ title }}',
+                  'Generate an SEO meta description (150-160 chars). Title: {{ title }}. Excerpt: {{ excerpt }}',
+              },
+            }
+          }
+          if (path.endsWith('.meta.ogTitle')) {
+            return {
+              data: {
+                prompt:
+                  'Generate a compelling social media title (60-90 chars) that drives clicks. Title: {{ title }}',
+              },
+            }
+          }
+          if (path.endsWith('.excerpt')) {
+            return {
+              data: {
+                prompt:
+                  'Write a concise excerpt (150-160 chars) summarizing this page for search results. Title: {{ title }}',
               },
             }
           }
           if (path.endsWith('.slug')) return false // Disable AI for slugs
+          if (path.endsWith('.meta.robots')) return false // Disable AI for robots
+          if (path.endsWith('.meta.jsonLd')) return false // Disable AI for JSON-LD
           return undefined // Use default prompts for everything else
         },
 
