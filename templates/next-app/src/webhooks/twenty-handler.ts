@@ -11,6 +11,7 @@ export const twentyWebhookHandler: PayloadHandler = async (req) => {
     return Response.json({ error: 'Webhook secret not configured' }, { status: 500 })
   }
 
+  // Payload 3.x: req.text() may be optional on PayloadRequest
   const rawBody = await req.text!()
   const signature = req.headers.get('x-twenty-webhook-signature') || ''
 
@@ -41,12 +42,15 @@ async function processEvent(
   req: Parameters<PayloadHandler>[0],
 ) {
   switch (event) {
+    // Twenty webhook payload uses FLAT fields (per docs):
+    // { id, firstName, lastName, email, createdAt, ... }
+    // This is DIFFERENT from the GraphQL schema which uses composite fields
+    // (emails.primaryEmail, name.firstName, etc.)
+
     case 'person.created': {
-      const emailsObj = data.emails as { primaryEmail?: string } | undefined
-      const email = emailsObj?.primaryEmail
-      const nameObj = data.name as { firstName?: string; lastName?: string } | undefined
-      const firstName = nameObj?.firstName || ''
-      const lastName = nameObj?.lastName || ''
+      const email = data.email as string | undefined
+      const firstName = (data.firstName as string) || ''
+      const lastName = (data.lastName as string) || ''
       const twentyId = data.id as string
 
       if (!email) {
@@ -99,11 +103,9 @@ async function processEvent(
 
     case 'person.updated': {
       const twentyId = data.id as string
-      const emailsObj = data.emails as { primaryEmail?: string } | undefined
-      const email = emailsObj?.primaryEmail
-      const nameObj = data.name as { firstName?: string; lastName?: string } | undefined
-      const firstName = nameObj?.firstName || undefined
-      const lastName = nameObj?.lastName || undefined
+      const email = data.email as string | undefined
+      const firstName = (data.firstName as string) || undefined
+      const lastName = (data.lastName as string) || undefined
 
       const existing = await req.payload.find({
         collection: 'contacts',
@@ -133,21 +135,42 @@ async function processEvent(
     case 'opportunity.stage_changed': {
       if (data.stage !== 'CLOSED_WON') return
 
-      const email = data.contactEmail as string | undefined
-      const firstName = (data.contactFirstName as string) || ''
-      const dealName = (data.name as string) || (data.dealName as string) || 'your deal'
-      const amount = (data.amount as number) || 0
-      // Use the person/contact ID (not the opportunity ID) so Resend tracking correlates
-      const contactId = (data.pointOfContactId as string) || (data.contactId as string) || ''
+      // Twenty webhook sends flat fields for the opportunity object
+      // Contact info may not be denormalized — use pointOfContactId to look up
+      const dealName = (data.name as string) || 'your deal'
+      const pointOfContactId = data.pointOfContactId as string | undefined
 
-      if (!email) {
-        req.payload.logger.warn({ data }, 'opportunity.stage_changed missing contactEmail')
+      // Amount in Twenty is { amountMicros, currencyCode } but webhook may flatten it
+      const rawAmount = data.amount as number | { amountMicros?: number } | undefined
+      const amountMicros = typeof rawAmount === 'number'
+        ? rawAmount
+        : (rawAmount?.amountMicros ?? 0)
+      const amount = amountMicros / 1_000_000 // Convert micros to dollars
+
+      if (!pointOfContactId) {
+        req.payload.logger.warn({ data }, 'opportunity.stage_changed missing pointOfContactId')
         return
       }
 
-      const emailTags = [{ name: 'contact_id', value: contactId }]
+      // Look up the contact's email from Payload contacts by twentyId
+      const contact = await req.payload.find({
+        collection: 'contacts',
+        where: { twentyId: { equals: pointOfContactId } },
+        limit: 1,
+      })
 
-      // Send congratulations and follow-up independently so one failure doesn't block the other
+      const contactDoc = contact.docs[0] as Record<string, unknown> | undefined
+      const email = contactDoc?.email as string | undefined
+      const firstName = (contactDoc?.firstName as string) || ''
+
+      if (!email) {
+        req.payload.logger.warn({ pointOfContactId }, 'opportunity.stage_changed: no contact email found')
+        return
+      }
+
+      const emailTags = [{ name: 'contact_id', value: pointOfContactId }]
+
+      // Send congratulations and follow-up independently
       await sendCrmEmail({
         to: email,
         subject: 'Congratulations on your new deal!',
@@ -171,7 +194,6 @@ async function processEvent(
     }
 
     default:
-      // Unhandled event — log and ignore
       req.payload.logger.info({ event }, 'Unhandled Twenty webhook event')
   }
 }

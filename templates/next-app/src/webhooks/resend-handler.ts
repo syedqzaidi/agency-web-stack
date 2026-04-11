@@ -30,8 +30,9 @@ export const resendWebhookHandler: PayloadHandler = async (req) => {
   const { type, data } = body
 
   // Extract contact_id from email tags for CRM correlation
-  const tags = data.tags as Array<{ name: string; value: string }> | undefined
-  const contactId = tags?.find((t) => t.name === 'contact_id')?.value
+  // Resend webhook tags are an object { key: value }, not an array
+  const tags = data.tags as Record<string, string> | undefined
+  const contactId = tags?.contact_id
 
   // Fire-and-forget event processing
   void processEvent(type, contactId, req).catch((err) => {
