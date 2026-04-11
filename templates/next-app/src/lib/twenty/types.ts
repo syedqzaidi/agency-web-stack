@@ -1,4 +1,4 @@
-// ─── Name ────────────────────────────────────────────────────────────────────
+// ─── Composite Field Types (Twenty v1.20) ───────────────────────────────────
 
 export interface FullName {
   firstName: string
@@ -15,6 +15,32 @@ export interface Phones {
   additionalPhones?: string[]
 }
 
+export interface Links {
+  primaryLinkUrl: string
+  primaryLinkLabel: string
+  secondaryLinks?: Array<{ url: string; label: string }>
+}
+
+export interface Address {
+  addressStreet1?: string
+  addressStreet2?: string
+  addressCity?: string
+  addressState?: string
+  addressPostcode?: string
+  addressCountry?: string
+  addressLat?: number | null
+  addressLng?: number | null
+}
+
+export interface Currency {
+  amountMicros: number | null
+  currencyCode: string | null
+}
+
+export interface RichText {
+  blocknote?: string
+}
+
 // ─── Core Entities ───────────────────────────────────────────────────────────
 
 export interface Person {
@@ -24,8 +50,11 @@ export interface Person {
   phones?: Phones
   city?: string
   jobTitle?: string
-  linkedinLink?: { primaryLinkUrl: string; primaryLinkLabel: string }
-  companyId?: string
+  linkedinLink?: Links
+  xLink?: Links
+  avatarUrl?: string
+  position?: number
+  companyId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -33,9 +62,14 @@ export interface Person {
 export interface Company {
   id: string
   name: string
-  domainName?: string
-  address?: string
+  domainName?: Links
+  address?: Address
   employees?: number
+  linkedinLink?: Links
+  xLink?: Links
+  annualRecurringRevenue?: Currency
+  idealCustomerProfile?: boolean
+  position?: number
   createdAt: string
   updatedAt: string
 }
@@ -43,18 +77,15 @@ export interface Company {
 export interface Opportunity {
   id: string
   name?: string
-  amount?: number
+  amount?: Currency
   closeDate?: string
   stage?: string
   probability?: number
+  position?: number
   pointOfContactId?: string
   companyId?: string
   createdAt: string
   updatedAt: string
-}
-
-export interface RichText {
-  blocknote?: string
 }
 
 export interface Note {
@@ -70,7 +101,7 @@ export interface Task {
   id: string
   title?: string
   bodyV2?: RichText
-  status?: string
+  status?: string // TaskStatusEnum: TODO, IN_PROGRESS, DONE
   dueAt?: string
   assigneeId?: string
   position?: number

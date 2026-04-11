@@ -188,7 +188,7 @@ async function syncTarget(
                 `mutation CreateNoteTarget($input: NoteTargetCreateInput!) {
                   createNoteTarget(data: $input) { id }
                 }`,
-                { input: { noteId: createdNote.id, personId: person.id } },
+                { input: { noteId: createdNote.id, targetPersonId: person.id } },
               )
               log(`Linked note ${createdNote.id} to person ${person.id} (${email})`)
             } catch (linkErr) {

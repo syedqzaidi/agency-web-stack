@@ -64,19 +64,23 @@ const DEFAULT_FIELDS: Record<string, string> = {
   companies: `
     id
     name
-    domainName
-    address
+    domainName { primaryLinkUrl primaryLinkLabel }
+    address { addressStreet1 addressStreet2 addressCity addressState addressPostcode addressCountry }
     employees
+    linkedinLink { primaryLinkUrl primaryLinkLabel }
+    annualRecurringRevenue { amountMicros currencyCode }
+    idealCustomerProfile
+    position
     createdAt
     updatedAt
   `,
   opportunities: `
     id
     name
-    amount
+    amount { amountMicros currencyCode }
     closeDate
     stage
-    probability
+    position
     pointOfContactId
     companyId
     createdAt
