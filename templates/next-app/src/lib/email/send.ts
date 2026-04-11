@@ -1,11 +1,21 @@
+import type { ReactElement } from 'react'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | undefined
+
+function getResendClient(): Resend {
+  if (!_resend) {
+    const key = process.env.RESEND_API_KEY
+    if (!key) throw new Error('RESEND_API_KEY is required to send CRM emails')
+    _resend = new Resend(key)
+  }
+  return _resend
+}
 
 type CrmEmailOptions = {
   to: string
   subject: string
-  react: React.ReactElement
+  react: ReactElement
   tags?: Array<{ name: string; value: string }>
   scheduledAt?: string // ISO date string for delayed send
 }
@@ -14,7 +24,7 @@ export async function sendCrmEmail(options: CrmEmailOptions) {
   const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'noreply@example.com'
   const fromName = process.env.NEXT_PUBLIC_SITE_NAME || 'Site Name'
 
-  const { data, error } = await resend.emails.send({
+  const { data, error } = await getResendClient().emails.send({
     from: `${fromName} <${fromAddress}>`,
     to: options.to,
     subject: options.subject,

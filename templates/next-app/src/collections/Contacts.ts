@@ -23,6 +23,7 @@ export const Contacts: CollectionConfig = {
     {
       name: 'email',
       type: 'email',
+      required: true,
       unique: true,
       index: true,
     },

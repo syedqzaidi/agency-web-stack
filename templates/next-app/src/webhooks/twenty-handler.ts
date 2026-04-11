@@ -43,8 +43,9 @@ async function processEvent(
   switch (event) {
     case 'person.created': {
       const email = data.email as string | undefined
-      const firstName = (data.firstName as string) || (data.name as string) || ''
-      const lastName = (data.lastName as string) || ''
+      const nameObj = data.name as { firstName?: string; lastName?: string } | undefined
+      const firstName = nameObj?.firstName || ''
+      const lastName = nameObj?.lastName || ''
       const twentyId = data.id as string
 
       if (!email) {
@@ -52,17 +53,34 @@ async function processEvent(
         return
       }
 
-      await req.payload.create({
+      // Upsert: check for existing contact to avoid unique constraint violation
+      const existing = await req.payload.find({
         collection: 'contacts',
-        data: {
-          email,
-          firstName,
-          lastName,
-          twentyId,
-          source: 'twenty',
-        },
-        context: { skipCrmSync: true },
+        where: { email: { equals: email } },
+        limit: 1,
       })
+
+      if (existing.docs.length > 0) {
+        await req.payload.update({
+          collection: 'contacts',
+          id: existing.docs[0].id,
+          data: { firstName, lastName, twentyId, source: 'twenty-webhook', lastSyncedAt: new Date().toISOString() },
+          context: { skipCrmSync: true },
+        })
+      } else {
+        await req.payload.create({
+          collection: 'contacts',
+          data: {
+            email,
+            firstName,
+            lastName,
+            twentyId,
+            source: 'twenty-webhook',
+            lastSyncedAt: new Date().toISOString(),
+          },
+          context: { skipCrmSync: true },
+        })
+      }
 
       await sendCrmEmail({
         to: email,
@@ -79,8 +97,9 @@ async function processEvent(
     case 'person.updated': {
       const twentyId = data.id as string
       const email = data.email as string | undefined
-      const firstName = (data.firstName as string) || (data.name as string) || undefined
-      const lastName = (data.lastName as string) || undefined
+      const nameObj = data.name as { firstName?: string; lastName?: string } | undefined
+      const firstName = nameObj?.firstName || undefined
+      const lastName = nameObj?.lastName || undefined
 
       const existing = await req.payload.find({
         collection: 'contacts',
@@ -100,6 +119,7 @@ async function processEvent(
           ...(email && { email }),
           ...(firstName && { firstName }),
           ...(lastName && { lastName }),
+          lastSyncedAt: new Date().toISOString(),
         },
         context: { skipCrmSync: true },
       })
