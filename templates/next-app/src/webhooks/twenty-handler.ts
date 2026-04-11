@@ -42,7 +42,8 @@ async function processEvent(
 ) {
   switch (event) {
     case 'person.created': {
-      const email = data.email as string | undefined
+      const emailsObj = data.emails as { primaryEmail?: string } | undefined
+      const email = emailsObj?.primaryEmail
       const nameObj = data.name as { firstName?: string; lastName?: string } | undefined
       const firstName = nameObj?.firstName || ''
       const lastName = nameObj?.lastName || ''
@@ -98,7 +99,8 @@ async function processEvent(
 
     case 'person.updated': {
       const twentyId = data.id as string
-      const email = data.email as string | undefined
+      const emailsObj = data.emails as { primaryEmail?: string } | undefined
+      const email = emailsObj?.primaryEmail
       const nameObj = data.name as { firstName?: string; lastName?: string } | undefined
       const firstName = nameObj?.firstName || undefined
       const lastName = nameObj?.lastName || undefined
