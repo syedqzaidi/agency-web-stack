@@ -18,6 +18,7 @@ import { payloadAiPlugin } from '@ai-stack/payloadcms'
 // import { betterLocalizedFields } from '@payload-enchants/better-localized-fields'
 // import { docsReorder } from '@payload-enchants/docs-reorder'
 // import { buildCachedPayload } from '@payload-enchants/cached-local-api'
+import { twentyCrmPlugin } from './twenty-crm'
 import type { Plugin } from 'payload'
 
 export function getPlugins(): Plugin[] {
@@ -250,6 +251,68 @@ export function getPlugins(): Plugin[] {
             fields: [
               { fieldPath: 'email', stripeProperty: 'email' },
               { fieldPath: 'name', stripeProperty: 'name' },
+            ],
+          },
+        ],
+      }),
+    )
+  }
+
+  // Twenty CRM plugin — conditional on environment variables
+  if (process.env.TWENTY_API_URL && process.env.TWENTY_API_KEY) {
+    plugins.push(
+      twentyCrmPlugin({
+        apiUrl: process.env.TWENTY_API_URL,
+        apiKey: process.env.TWENTY_API_KEY,
+        logs: process.env.NODE_ENV !== 'production',
+        sync: [
+          {
+            collection: 'form-submissions',
+            formSubmission: true,
+            targets: [
+              {
+                object: 'people',
+                fields: [
+                  { sourceField: 'email', targetField: 'email' },
+                  {
+                    sourceField: 'firstName',
+                    targetField: 'name.firstName',
+                    transform: (v) => String(v || ''),
+                  },
+                  {
+                    sourceField: 'lastName',
+                    targetField: 'name.lastName',
+                    transform: (v) => String(v || ''),
+                  },
+                  { sourceField: 'phone', targetField: 'phone' },
+                  { sourceField: 'company', targetField: 'jobTitle' },
+                ],
+              },
+              {
+                object: 'notes',
+                bodyField: 'message',
+                linkToPersonByEmail: 'email',
+                fields: [
+                  {
+                    sourceField: '_formTitle',
+                    targetField: 'title',
+                    transform: (v) => `Form: ${v || 'Submission'}`,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            collection: 'users',
+            condition: (doc) => doc.role === 'admin' || doc.role === 'editor',
+            targets: [
+              {
+                object: 'people',
+                fields: [
+                  { sourceField: 'email', targetField: 'email' },
+                  { sourceField: 'name', targetField: 'name.firstName' },
+                ],
+              },
             ],
           },
         ],
