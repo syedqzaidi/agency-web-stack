@@ -4,7 +4,7 @@ import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { resendAdapter } from '@payloadcms/email-resend'
-import { Pages, Media, Users } from './collections'
+import { Contacts, Pages, Media, Users } from './collections'
 import { getPlugins } from './plugins'
 
 const filename = fileURLToPath(import.meta.url)
@@ -44,7 +44,7 @@ export default buildConfig({
     fallback: true,
   },
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || '',
-  collections: [Pages, Media, Users],
+  collections: [Pages, Media, Users, ...(process.env.TWENTY_API_URL ? [Contacts] : [])],
   plugins: getPlugins(),
   editor: lexicalEditor(),
   // Email via Resend — required for form builder emails and auth (password reset, etc.)
