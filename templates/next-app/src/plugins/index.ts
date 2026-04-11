@@ -285,6 +285,7 @@ export function getPlugins(): Plugin[] {
                     transform: (v) => String(v || ''),
                   },
                   { sourceField: 'phone', targetField: 'phones.primaryPhoneNumber' },
+                  { sourceField: 'jobTitle', targetField: 'jobTitle' },
                 ],
               },
               {
