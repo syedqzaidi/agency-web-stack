@@ -16,7 +16,7 @@ import type {
 export function createPayloadClient(config: PayloadClientConfig): PayloadClient {
   const { apiKey, defaultDepth = 1, authCollection = 'users' } = config
   const apiUrl = config.apiUrl.replace(/\/+$/, '')
-  const timeout = config.timeout ?? 30_000
+  const timeout = config.timeout ?? 60_000
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

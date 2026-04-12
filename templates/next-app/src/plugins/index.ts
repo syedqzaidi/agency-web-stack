@@ -335,7 +335,8 @@ export function getPlugins(): Plugin[] {
   // Configured with 33 custom tools, 5 prompts, and granular collection permissions
   plugins.push(mcpPlugin(mcpConfig))
 
-  // AI plugin — activates when any supported AI provider key is set
+  // AI plugin — conditional on having at least one AI provider key
+  // Without a key the plugin slows Payload to a crawl (30s+ responses)
   const hasAiProvider =
     process.env.OPENAI_API_KEY ||
     process.env.ANTHROPIC_API_KEY ||
@@ -344,69 +345,72 @@ export function getPlugins(): Plugin[] {
   if (hasAiProvider) {
     plugins.push(
       payloadAiPlugin({
-        // Enable AI on pages (text compose, proofread, translate, rephrase, expand, simplify, summarize)
-        collections: {
-          pages: true,
-        },
+      // Enable AI on pages (text compose, proofread, translate, rephrase, expand, simplify, summarize)
+      collections: {
+        pages: true,
+      },
 
-        // Route generated images to the media collection
-        uploadCollectionSlug: 'media',
+      // Route generated images to the media collection
+      uploadCollectionSlug: 'media',
 
-        // Access control — editors+ can generate, only admins can edit AI settings/prompts
-        access: {
-          generate: ({ req }) =>
-            req.user?.role === 'admin' || req.user?.role === 'editor',
-          settings: ({ req }) => req.user?.role === 'admin',
-        },
+      // Access control — editors+ can generate, only admins can edit AI settings/prompts
+      access: {
+        generate: ({ req }) =>
+          req.user?.role === 'admin' || req.user?.role === 'editor',
+        settings: ({ req }) => req.user?.role === 'admin',
+      },
 
-        // Lock translation languages to match our i18n config (en/es/fr)
-        options: {
-          enabledLanguages: ['en-US', 'es', 'fr'],
-        },
+      // Lock translation languages to match our i18n config (en/es/fr)
+      options: {
+        enabledLanguages: ['en-US', 'es', 'fr'],
+      },
 
-        // Auto-populate AI prompts for SEO and content fields
-        seedPrompts: ({ path }) => {
-          if (path.endsWith('.meta.title')) {
-            return {
-              data: {
-                prompt:
-                  'Generate an SEO-optimized page title (50-60 chars) for: {{ title }}',
-              },
-            }
+      // Auto-populate AI prompts for SEO and content fields
+      seedPrompts: ({ path }) => {
+        if (path.endsWith('.meta.title')) {
+          return {
+            data: {
+              prompt:
+                'Generate an SEO-optimized page title (50-60 chars) for: {{ title }}',
+            },
           }
-          if (path.endsWith('.meta.description')) {
-            return {
-              data: {
-                prompt:
-                  'Generate an SEO meta description (150-160 chars). Title: {{ title }}. Excerpt: {{ excerpt }}',
-              },
-            }
+        }
+        if (path.endsWith('.meta.description')) {
+          return {
+            data: {
+              prompt:
+                'Generate an SEO meta description (150-160 chars). Title: {{ title }}. Excerpt: {{ excerpt }}',
+            },
           }
-          if (path.endsWith('.meta.ogTitle')) {
-            return {
-              data: {
-                prompt:
-                  'Generate a compelling social media title (60-90 chars) that drives clicks. Title: {{ title }}',
-              },
-            }
+        }
+        if (path.endsWith('.meta.ogTitle')) {
+          return {
+            data: {
+              prompt:
+                'Generate a compelling social media title (60-90 chars) that drives clicks. Title: {{ title }}',
+            },
           }
-          if (path.endsWith('.excerpt')) {
-            return {
-              data: {
-                prompt:
-                  'Write a concise excerpt (150-160 chars) summarizing this page for search results. Title: {{ title }}',
-              },
-            }
+        }
+        if (path.endsWith('.excerpt')) {
+          return {
+            data: {
+              prompt:
+                'Write a concise excerpt (150-160 chars) summarizing this page for search results. Title: {{ title }}',
+            },
           }
-          if (path.endsWith('.slug')) return false // Disable AI for slugs
-          if (path.endsWith('.meta.robots')) return false // Disable AI for robots
-          if (path.endsWith('.meta.jsonLd')) return false // Disable AI for JSON-LD
-          return undefined // Use default prompts for everything else
-        },
+        }
+        if (path.endsWith('.slug')) return false // Disable AI for slugs
+        if (path.endsWith('.meta.robots')) return false // Disable AI for robots
+        if (path.endsWith('.meta.jsonLd')) return false // Disable AI for JSON-LD
+        return undefined // Use default prompts for everything else
+      },
 
-        debugging: process.env.NODE_ENV !== 'production',
-      }),
-    )
+      // Disable prompt generation at startup — avoids hanging when provider is slow/unreachable
+      generatePromptOnInit: false,
+
+      debugging: process.env.NODE_ENV !== 'production',
+    }),
+  )
   }
 
   // Enchants plugins — disabled due to Payload 3.82.x incompatibility.
