@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { PayloadAiPluginLexicalEditorFeature } from '@ai-stack/payloadcms'
 import { resendAdapter } from '@payloadcms/email-resend'
 import {
   Contacts, Pages, Media, Users,
@@ -74,7 +75,19 @@ export default buildConfig({
       handler: resendWebhookHandler,
     }] : []),
   ],
-  editor: lexicalEditor(),
+  onInit: async (payload) => {
+    if (process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      const { seedAiInstructions } = await import('./scripts/seed-ai-instructions')
+      const result = await seedAiInstructions(payload)
+      payload.logger.info(`AI instructions seeded: ${result.created} created, ${result.skipped} skipped`)
+    }
+  },
+  editor: lexicalEditor({
+    features: ({ rootFeatures }) => [
+      ...rootFeatures,
+      PayloadAiPluginLexicalEditorFeature(),
+    ],
+  }),
   // Email via Resend — required for form builder emails and auth (password reset, etc.)
   ...(process.env.RESEND_API_KEY && {
     email: resendAdapter({

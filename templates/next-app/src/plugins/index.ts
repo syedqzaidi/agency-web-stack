@@ -336,7 +336,6 @@ export function getPlugins(): Plugin[] {
   plugins.push(mcpPlugin(mcpConfig))
 
   // AI plugin — conditional on having at least one AI provider key
-  // Without a key the plugin slows Payload to a crawl (30s+ responses)
   const hasAiProvider =
     process.env.OPENAI_API_KEY ||
     process.env.ANTHROPIC_API_KEY ||
@@ -345,9 +344,16 @@ export function getPlugins(): Plugin[] {
   if (hasAiProvider) {
     plugins.push(
       payloadAiPlugin({
-      // Enable AI on pages (text compose, proofread, translate, rephrase, expand, simplify, summarize)
+      // Enable AI on content collections (compose, proofread, translate, rephrase, expand, simplify, summarize)
       collections: {
         pages: true,
+        'blog-posts': true,
+        services: true,
+        locations: true,
+        'service-pages': true,
+        faqs: true,
+        testimonials: true,
+        'team-members': true,
       },
 
       // Route generated images to the media collection
@@ -405,7 +411,7 @@ export function getPlugins(): Plugin[] {
         return undefined // Use default prompts for everything else
       },
 
-      // Disable prompt generation at startup — avoids hanging when provider is slow/unreachable
+      // Seeding happens via script (scripts/seed-ai-prompts.ts) to avoid slow startups
       generatePromptOnInit: false,
 
       debugging: process.env.NODE_ENV !== 'production',
